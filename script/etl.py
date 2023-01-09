@@ -14,11 +14,14 @@ import time
 
 
 def main():
-    df = scrapping(nb_page=1)
-    convert_date(df)
+    df = scrapping(nb_page=1) # default = 0 for all
+    df = convert_date(df) # convert date column to datetime format
+    load_data(df) # create le_monde.csv
 
 
 def scrapping(nb_page: int=0):
+    # scrap website to df
+
     # define driver
     driver = webdriver.Chrome()
 
@@ -56,6 +59,8 @@ def scrapping(nb_page: int=0):
 
 
 def convert_date(df: pd.DataFrame):
+    # convert date column to datetime format
+
     df["date"] = df["date"].str.findall(r"\d{2} [a-zéèû]* \d{4} à \d{2}h\d{2}").str[0]
     df["date"] = df["date"].str.replace("à ", "").str.replace("h", " ")
     df[['day', 'month', 'year', 'hour', 'minute']] = df['date'].str.split(' ', expand=True)
@@ -79,6 +84,12 @@ def convert_date(df: pd.DataFrame):
     df['date'] = df['day'] + '/' + df['month'] + '/' + df['year'] + ' ' + df["hour"] + ':' + df["minute"]
     df['date'] = pd.to_datetime(df['date'])
     df.drop(columns = ['day', 'month', 'year', 'hour', 'minute'], inplace=True)
+
+    return df
+
+
+def load_data(df: pd.DataFrame):
+    # load data to csv and database
 
     df.to_csv('data/le_monde.csv', index=False)
 
