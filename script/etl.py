@@ -102,7 +102,7 @@ def export_to_database(df: pd.DataFrame, table: str):
     # export to postgresql database
     conn_string = f"postgresql://{config.user}:{config.password}@{config.host}/{config.database}"
     conn = create_engine(conn_string).connect()
-    df.to_sql(table=table, con=conn, if_exists="append")
+    df.to_sql(name=table, con=conn, if_exists="append")
 
 
 if __name__ == "__main__":
