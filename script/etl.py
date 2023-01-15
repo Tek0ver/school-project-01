@@ -1,9 +1,10 @@
 # selenium 4
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromiumService
+from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.utils import ChromeType
-webdriver.Chrome(service=ChromiumService(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()))
+service = ChromeService(executable_path=ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service)
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -12,14 +13,19 @@ from selenium.webdriver.support import expected_conditions as EC
 import pandas as pd
 import time
 
+# sql
+from sqlalchemy import create_engine
+import config
+
 
 def main():
-    df = scrapping(nb_page=1) # default = 0 for all
-    df = convert_date(df) # convert date column to datetime format
-    load_data(df) # create le_monde.csv
+    df_le_monde = scrapping_le_monde(nb_page=1) # default = 0 for all
+    df_le_monde = convert_date(df_le_monde) # convert date column to datetime format
+    export_to_csv(df=df_le_monde, file_name="le_monde.csv") # export to csv file
+    export_to_database(df=df_le_monde, table="le_monde") # export to postgresql database
 
 
-def scrapping(nb_page: int=0):
+def scrapping_le_monde(nb_page: int=0):
     # scrap website to df
 
     # define driver
@@ -60,38 +66,43 @@ def scrapping(nb_page: int=0):
 
 def convert_date(df: pd.DataFrame):
     # convert date column to datetime format
-
     df["date"] = df["date"].str.findall(r"\d{2} [a-zéèû]* \d{4} à \d{2}h\d{2}").str[0]
     df["date"] = df["date"].str.replace("à ", "").str.replace("h", " ")
     df[['day', 'month', 'year', 'hour', 'minute']] = df['date'].str.split(' ', expand=True)
 
     month_dict = {
-    'janvier': '01',
-    'février': '02',
-    'mars': '03',
-    'avril': '04',
-    'mai': '05',
-    'juin': '06',
-    'juillet': '07',
-    'août': '08',
-    'septembre': '09',
-    'octobre': '10',
-    'novembre': '11',
-    'décembre': '12'
-    }
+        'janvier': '01',
+        'février': '02',
+        'mars': '03',
+        'avril': '04',
+        'mai': '05',
+        'juin': '06',
+        'juillet': '07',
+        'août': '08',
+        'septembre': '09',
+        'octobre': '10',
+        'novembre': '11',
+        'décembre': '12'
+        }
 
     df['month'] = df["month"].replace(month_dict)
-    df['date'] = df['day'] + '/' + df['month'] + '/' + df['year'] + ' ' + df["hour"] + ':' + df["minute"]
+    df['date'] = df['year'] + '/' + df['month'] + '/' + df['day'] + ' ' + df["hour"] + ':' + df["minute"]
     df['date'] = pd.to_datetime(df['date'])
     df.drop(columns = ['day', 'month', 'year', 'hour', 'minute'], inplace=True)
 
     return df
 
 
-def load_data(df: pd.DataFrame):
-    # load data to csv and database
+def export_to_csv(df: pd.DataFrame, file_name: str):
+    # export data to csv
+    df.to_csv(f'data/{file_name}', index=False)
 
-    df.to_csv('data/le_monde.csv', index=False)
+
+def export_to_database(df: pd.DataFrame, table: str):
+    # export to postgresql database
+    conn_string = f"postgresql://{config.user}:{config.password}@{config.host}/{config.database}"
+    conn = create_engine(conn_string).connect()
+    df.to_sql(name=table, con=conn, if_exists="append")
 
 
 if __name__ == "__main__":
