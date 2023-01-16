@@ -1,31 +1,27 @@
-import psycopg2
-import config
+from os import environ
+import pandas as pd
+from sqlalchemy import create_engine
 
-def get_table():
+
+def main():
+    db_to_df("le_monde")
+
+
+def db_to_df(table: str):
     # an example function for sql query
-    query = """
+    query = f"""
         SELECT *
-        FROM le_monde;
+        FROM {table};
         """
 
-    conn = None
-    try:
-        conn = psycopg2.connect(dbname= config.database, user=config.user, password=config.password, host=config.host)
-        cur = conn.cursor()
-        cur.execute(query)
-        row = cur.fetchone()
+    conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
+    conn = create_engine(conn_string).connect()
+    df = pd.read_sql_query(sql=query,con=conn)
+    conn.close()
 
-        while row is not None:
-            print(row)
-            row = cur.fetchone()
+    return df
 
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if conn is not None:
-            conn.close()
 
 
 if __name__ == '__main__':
-    get_table()
+    main()

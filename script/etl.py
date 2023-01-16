@@ -15,7 +15,7 @@ import time
 
 # sql
 from sqlalchemy import create_engine
-import config
+from os import environ
 
 
 def main():
@@ -94,15 +94,15 @@ def convert_date(df: pd.DataFrame):
 
 
 def export_to_csv(df: pd.DataFrame, file_name: str):
-    # export data to csv
+    # export df to csv
     df.to_csv(f'data/{file_name}', index=False)
 
 
 def export_to_database(df: pd.DataFrame, table: str):
     # export to postgresql database
-    conn_string = f"postgresql://{config.user}:{config.password}@{config.host}/{config.database}"
+    conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
     conn = create_engine(conn_string).connect()
-    df.to_sql(name=table, con=conn, if_exists="append")
+    df.to_sql(name=table, con=conn, if_exists="replace")
 
 
 if __name__ == "__main__":
