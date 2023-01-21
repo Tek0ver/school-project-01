@@ -1,14 +1,20 @@
 from os import environ
 import pandas as pd
 from sqlalchemy import create_engine
+import psycopg2
 
 
 def main():
-    db_to_df("le_monde")
+    df_lemonde = database_to_df("le_monde")
+    print(df_lemonde)
+    # drop_table("le_monde")
 
 
-def db_to_df(table: str):
-    # an example function for sql query
+def database_to_df(table: str):
+    """
+    select all from table set in parameter from database with sql query \n
+    return a dataframe
+    """
     query = f"""
         SELECT *
         FROM {table};
@@ -21,6 +27,33 @@ def db_to_df(table: str):
 
     return df
 
+
+def drop_table(table: str):
+    """
+    drop a table set in parameter
+    """
+    conn=psycopg2.connect(
+        database=environ["POSTGRES_DB"],
+        user=environ["POSTGRES_USER"],
+        password=environ["POSTGRES_PASSWORD"],
+        host=environ["POSTGRES_HOST"],
+        port="5432"
+    )
+    
+    cursor = conn.cursor()
+    
+    # drop table
+    sql = f'''DROP TABLE {table}'''
+    
+    # Executing the query
+    cursor.execute(sql)
+    print("Table dropped !")
+    
+    # Commit your changes in the database
+    conn.commit()
+    
+    # Closing the connection
+    conn.close()
 
 
 if __name__ == '__main__':
