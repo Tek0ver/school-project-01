@@ -23,7 +23,7 @@ from os import environ
 
 
 def main():
-    df_le_monde = scraping_le_monde(nb_page=3)
+    df_le_monde = scraping_le_monde(nb_page=1)
     # convert date column to datetime format
     if len(df_le_monde) > 0:
         df_le_monde = convert_date(df_le_monde)
@@ -34,6 +34,7 @@ def main():
     print(f"{len(df_le_monde)} rows added to database")
 
 
+
 def scraping_le_monde(nb_page: int=0, driver=driver):
     """
     scrap website until the last article scraped last time\n
@@ -42,7 +43,7 @@ def scraping_le_monde(nb_page: int=0, driver=driver):
     """
 
     # open web page
-    url = f"https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=19/12/1944&end_at=21/01/2023&search_sort=dateCreated_desc&page=1"
+    url = f"https://www.lemonde.fr/recherche/?search_keywords=ukraine&search_sort=dateCreated_desc&page=1"
     driver.get(url)
 
     # accept cookies
@@ -64,9 +65,10 @@ def scraping_le_monde(nb_page: int=0, driver=driver):
 
     stop = False
     for page in range(1, nb_page+1):
-        url = f"https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=19/12/1944&end_at=21/01/2023&search_sort=dateCreated_desc&page={page}"
+        url = f"https://www.lemonde.fr/recherche/?search_keywords=ukraine&search_sort=dateCreated_desc&page={page}"
         driver.get(url)
         driver_title = []
+        driver_content = []
         i = 1
         end = 0
         while end < 5:
@@ -78,8 +80,20 @@ def scraping_le_monde(nb_page: int=0, driver=driver):
                     stop = True
                     break
                 else:
-                    # append scraped title to driver_title list
-                    driver_title.append(title_article)
+                    # get title
+                    driver_title.append(title_article.text)
+
+                    # get content
+                    title_article.click()
+                    contents = driver.find_elements(by=By.XPATH, value="/html/body/main/section[1]/section/section/article/p") # article
+                    contents.insert(0, driver.find_element(by=By.CLASS_NAME, value="article__desc")) # article desc                                                               
+                    contents = [content.text for content in contents]
+                    driver_content.append(contents[0])
+
+                    # back to url for next article
+                    driver.get(url)
+
+                    # reinitialize end because we found a new article so it's not end page
                     end = 0
             except:
                 # ad or end page: count until 5 to be sure it's the end page and not an ad
@@ -88,9 +102,10 @@ def scraping_le_monde(nb_page: int=0, driver=driver):
             i += 1
 
         driver_date = driver.find_elements(by=By.XPATH, value='/html/body/main/article/section/section[1]/section[2]/section[3]/section/p/span[1]')
-        # append scraped title and date to articles list of dict
-        for title, date in zip(driver_title, driver_date):
-            articles.append({"title": title.text, "date": date.text})
+        # append scraped title, content and date to articles list of dict
+
+        for title, content, date in zip(driver_title, driver_content, driver_date):
+            articles.append({"title": title, "content": content, "date": date.text})
 
         if stop:
             # stop title (from the save.txt file) reached, so break the for loop
