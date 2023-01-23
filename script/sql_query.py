@@ -1,31 +1,60 @@
+from os import environ
+import pandas as pd
+from sqlalchemy import create_engine
 import psycopg2
-import config
 
-def get_table():
-    # an example function for sql query
-    query = """
+
+def main():
+    df_lemonde = database_to_df("le_monde")
+    print(df_lemonde)
+    # drop_table("le_monde")
+
+
+def database_to_df(table: str):
+    """
+    select all from table set in parameter from database with sql query \n
+    return a dataframe
+    """
+    query = f"""
         SELECT *
-        FROM le_monde;
+        FROM {table};
         """
 
-    conn = None
-    try:
-        conn = psycopg2.connect(dbname= config.database, user=config.user, password=config.password, host=config.host)
-        cur = conn.cursor()
-        cur.execute(query)
-        row = cur.fetchone()
+    conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
+    conn = create_engine(conn_string).connect()
+    df = pd.read_sql_query(sql=query,con=conn)
+    conn.close()
 
-        while row is not None:
-            print(row)
-            row = cur.fetchone()
+    return df
 
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if conn is not None:
-            conn.close()
+
+def drop_table(table: str):
+    """
+    drop a table set in parameter
+    """
+    conn=psycopg2.connect(
+        database=environ["POSTGRES_DB"],
+        user=environ["POSTGRES_USER"],
+        password=environ["POSTGRES_PASSWORD"],
+        host=environ["POSTGRES_HOST"],
+        port="5432"
+    )
+    
+    cursor = conn.cursor()
+    
+    # drop table
+    sql = f'''DROP TABLE {table}'''
+    
+    # Executing the query
+    cursor.execute(sql)
+    print("Table dropped !")
+    
+    # Commit your changes in the database
+    conn.commit()
+    
+    # Closing the connection
+    conn.close()
 
 
 if __name__ == '__main__':
-    get_table()
+    main()

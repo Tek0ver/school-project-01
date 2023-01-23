@@ -6,9 +6,9 @@ services:
     container_name: postgres
     image: postgres
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=vinci
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - data:/var/lib/postgresql/data
     ports:
