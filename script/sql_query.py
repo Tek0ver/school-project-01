@@ -5,9 +5,9 @@ import psycopg2
 
 
 def main():
-    df_lemonde = database_to_df("le_monde")
+    df_lemonde = database_to_df("articles")
     print(df_lemonde)
-    # drop_table("le_monde")
+    # drop_table("articles")
 
 
 def database_to_df(table: str):
