@@ -2,8 +2,13 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
-service = ChromeService(executable_path=ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service)
+options = webdriver.ChromeOptions()
+options.add_argument("--headless")
+options.add_argument("--disable-gpu")
+driver = webdriver.Chrome(
+    service=ChromeService(ChromeDriverManager().install()),
+    options=options,
+    )
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,16 +19,22 @@ import pandas as pd
 import time
 from datetime import date
 from datetime import timedelta
+import time
 
 # sql
 from sqlalchemy import create_engine
+import psycopg2
 
 # system
 from os import environ
 
 
 def main():
-    update_contents()
+    start_time = time.time()
+    update_articles()
+    # update_contents()
+    print("--- %s seconds ---" % (time.time() - start_time))
+
 
 
 
@@ -36,12 +47,11 @@ def update_articles():
     export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="replace")
     # export to postgresql database
     export_to_database(df=df_le_monde, table="articles", if_exists="append")
-    print(f"{len(df_le_monde)} rows added to database")
+    print(f"{len(df_le_monde)} rows added to articles")
 
 
 def update_contents():
     links = get_content_link()
-
     # open web page
     driver.get(links[0])
     # accept cookies
@@ -53,30 +63,37 @@ def update_contents():
         driver.get(link)
         contents.append(get_content())
 
-    return contents
+    df_content = pd.DataFrame(contents)
+    print(df_content)
 
+    # export to csv file
+    export_to_csv(df=df_content, file_name="content.csv", if_exists="replace")
+    # export to postgresql database
+    export_to_database(df=df_content, table="contents", if_exists="append")
+    print(f"{len(df_content)} rows added to contents")
 
 
 def get_content():
     contents = driver.find_elements(by=By.XPATH, value="/html/body/main/section[1]/section/section/article/p") # article
     contents.insert(0, driver.find_element(by=By.CLASS_NAME, value="article__desc")) # article desc                                                               
     contents = [content.text for content in contents]
+    contents = ' '.join(contents)
 
     return contents
-
 
 
 def get_content_link():
     query = f"""
         SELECT link
         FROM articles
+        LIMIT 5
         """
         # JOIN contents ON articles.id = contents.article_id
         # WHERE contents.content IS NULL;
 
     conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
     conn = create_engine(conn_string).connect()
-    df = pd.read_sql_query(sql=query,con=conn)
+    df = pd.read_sql_query(sql=query, con=conn)
     conn.close()
 
     links = df["link"].to_list()
@@ -251,6 +268,7 @@ def export_to_database(df: pd.DataFrame, table: str, if_exists: str="append"):
     conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
     conn = create_engine(conn_string).connect()
     df.to_sql(name=table, con=conn, if_exists=if_exists, index=False)
+
 
 
 if __name__ == "__main__":

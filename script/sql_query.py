@@ -5,9 +5,46 @@ import psycopg2
 
 
 def main():
-    df_lemonde = database_to_df("articles")
-    print(df_lemonde)
+    select_tables()
+    df = database_to_df("articles")
+    print(df)
     # drop_table("articles")
+
+
+
+
+def select_tables():
+    """
+    create a table set in parameter
+    """
+    conn=psycopg2.connect(
+        database=environ["POSTGRES_DB"],
+        user=environ["POSTGRES_USER"],
+        password=environ["POSTGRES_PASSWORD"],
+        host=environ["POSTGRES_HOST"],
+        port="5432"
+    )
+    
+    cur = conn.cursor()
+    
+    # create table
+    sql = f'''
+        SELECT *
+        FROM articles
+        '''
+    
+    # Executing the query
+    cur.execute(sql)
+    rows = cur.fetchall()
+    for row in rows:
+        print(row)
+    cur.close()
+    # Commit your changes in the database
+    conn.commit()
+    # Closing the connection
+    conn.close()
+
+
 
 
 def database_to_df(table: str):
