@@ -24,7 +24,7 @@ def create_tables():
     # create table
     sql = f'''
         CREATE TABLE articles (
-            article_id SERIAL PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             journal VARCHAR(50),
             title VARCHAR(255),
             date TIMESTAMP,

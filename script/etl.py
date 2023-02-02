@@ -1,9 +1,11 @@
+import config
 # selenium 4, scraping library
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 options = webdriver.ChromeOptions()
-options.add_argument("--headless")
+if config.headless:
+    options.add_argument("--headless")
 options.add_argument("--disable-gpu")
 driver = webdriver.Chrome(
     service=ChromeService(ChromeDriverManager().install()),
@@ -19,11 +21,11 @@ import pandas as pd
 import time
 from datetime import date
 from datetime import timedelta
-import time
 
 # sql
-from sqlalchemy import create_engine
 import psycopg2
+from io import StringIO
+# from sqlalchemy import create_engine
 
 # system
 from os import environ
@@ -31,22 +33,31 @@ from os import environ
 
 def main():
     start_time = time.time()
-    update_articles()
+
+    # connection to database
+    conn = psycopg2.connect(**config.param_dict)
+
+    # update database
+    update_articles(conn)
     # update_contents()
-    print("--- %s seconds ---" % (time.time() - start_time))
+
+    conn.close()
+
+    # get execute time
+    print(f"{round(time.time() - start_time, 2)} seconds")
 
 
-
-
-def update_articles():
-    df_le_monde = scraping_journal(journal_name="le monde", nb_page=1, url="https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=01%2F01%2F2021&search_sort=dateCreated_desc")
-    # convert date column to datetime format
+def update_articles(conn):
+    df_le_monde = scraping_journal(journal_name="le monde", nb_page=config.nb_page, url="https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=01%2F01%2F2021&search_sort=dateCreated_desc")
     if len(df_le_monde) > 0:
+        # convert date column to datetime format
         df_le_monde = convert_date(df_le_monde)
-    # export to csv file
-    export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="replace")
-    # export to postgresql database
-    export_to_database(df=df_le_monde, table="articles", if_exists="append")
+        # export to csv file
+        export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="replace")
+        # export to postgresql database
+        export_to_database(conn, df=df_le_monde, table="articles")
+        save_articles(df_le_monde)
+
     print(f"{len(df_le_monde)} rows added to articles")
 
 
@@ -195,22 +206,13 @@ def scraping_journal(journal_name: str, nb_page: int=0, url: str=""):
 
     driver.quit()
 
-    # save 5 last title into save.txt file for the next scrap (5 to be sure to don't miss the point cause of an eventual title rename)
-    if len(articles) >= 5:
-        with open("script/save.txt", "w") as f:
-            for i in range(5):
-                f.write(f'{articles[i]["title"]}\n')
-    # same thing but if less than 5 titles scraped
-    elif len(articles) > 0:
-        with open("script/save.txt", "w") as f:
-            for i in range(len(articles)):
-                f.write(f'{articles[i]["title"]}\n')
-
     # create dataframe from dict
     df = pd.DataFrame.from_dict(articles)
     df.insert(0, "journal", journal_name)
 
-    return df[::-1]
+    df = df[::-1].reset_index(drop=True)
+
+    return df
 
 
 def convert_date(df: pd.DataFrame):
@@ -249,6 +251,18 @@ def convert_date(df: pd.DataFrame):
     return df
 
 
+def save_articles(df: pd.DataFrame):
+    # save 5 last title into save.txt file for the next scrap (5 to be sure to don't miss the point cause of an eventual title rename)
+    if len(df) >= 6:
+        save_range = range(1, 6)
+    else:
+        save_range = range(1, len(df)+1)
+
+    with open("script/save.txt", "w") as f:
+        for i in save_range:
+            f.write(f'{df.iloc[-i]["title"]}\n')
+
+
 def export_to_csv(df: pd.DataFrame, file_name: str, if_exists: str="replace"):
     """
     export df to csv
@@ -260,15 +274,19 @@ def export_to_csv(df: pd.DataFrame, file_name: str, if_exists: str="replace"):
         df.to_csv(f'data/{file_name}', mode='a', index=False, header=False)
 
 
-def export_to_database(df: pd.DataFrame, table: str, if_exists: str="append"):
-    """
-    export to postgresql database
-    if_exists : {'fail', 'replace', 'append'}, default 'append'
-    """
-    conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
-    conn = create_engine(conn_string).connect()
-    df.to_sql(name=table, con=conn, if_exists=if_exists, index=False)
 
+def export_to_database(conn, df: pd.DataFrame, table: str):
+    """
+    export to postgresql table
+    """
+    # save dataframe to an in memory buffer
+    cols = tuple(df.columns)
+    buffer = StringIO()
+    df.to_csv(buffer, header=False, index=False, sep=";")
+    buffer.seek(0)
+    cursor = conn.cursor()
+    cursor.copy_from(buffer, table, sep=";", columns=cols)
+    conn.commit()
 
 
 if __name__ == "__main__":
