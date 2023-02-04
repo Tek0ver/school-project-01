@@ -1,20 +1,4 @@
 import config
-# selenium 4, scraping library
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
-options = webdriver.ChromeOptions()
-if config.headless:
-    options.add_argument("--headless")
-options.add_argument("--disable-gpu")
-driver = webdriver.Chrome(
-    service=ChromeService(ChromeDriverManager().install()),
-    options=options,
-    )
-
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 # python
 import pandas as pd
@@ -25,91 +9,150 @@ from datetime import timedelta
 # sql
 import psycopg2
 from io import StringIO
-# from sqlalchemy import create_engine
 
-# system
-from os import environ
+# selenium 4, scraping library
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+# init driver
+options = webdriver.ChromeOptions()
+if config.headless:
+    options.add_argument("--headless")
+options.add_argument("--disable-gpu")
+driver = webdriver.Chrome(
+    service=ChromeService(ChromeDriverManager().install()),
+    options=options,
+    )
 
 
 def main():
     start_time = time.time()
 
-    # connection to database
-    conn = psycopg2.connect(**config.param_dict)
-
-    # update database
-    update_articles(conn)
-    # update_contents()
-
-    conn.close()
+    update_database()
 
     # get execute time
     print(f"{round(time.time() - start_time, 2)} seconds")
 
 
+def update_database(articles: bool=True, contents: bool=True):
+    # connection to database
+    conn = psycopg2.connect(**config.param_dict)
+
+    # cookies
+    accept_cookies("https://www.lemonde.fr")
+
+    # update database
+    if articles:
+        update_articles(conn)
+
+    if contents:
+        update_contents(conn)
+
+    # quit selenium driver
+    driver.quit()
+
+    # close sql connection
+    conn.close()
+
+
 def update_articles(conn):
+    # create df
     df_le_monde = scraping_journal(journal_name="le monde", nb_page=config.nb_page, url="https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=01%2F01%2F2021&search_sort=dateCreated_desc")
     if len(df_le_monde) > 0:
         # convert date column to datetime format
         df_le_monde = convert_date(df_le_monde)
+        # make sure df is in correct format
+        df_le_monde = df_le_monde.replace('\n','', regex=True)
+        df_le_monde = df_le_monde.replace(';','', regex=True)
         # export to csv file
-        export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="replace")
+        export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="append")
         # export to postgresql database
         export_to_database(conn, df=df_le_monde, table="articles")
         save_articles(df_le_monde)
 
     print(f"{len(df_le_monde)} rows added to articles")
+    
+
+def update_contents(conn):
+    # get links of each articles
+    links = get_content_link(conn)
+    if len(links) > 0:
+        # create df
+        df_content = scrap_content(links)
+        # make sure df is in correct format
+        df_content = df_content.replace('\n','', regex=True)
+        df_content = df_content.replace(';','', regex=True)
+        # export to csv file
+        export_to_csv(df=df_content, file_name="content.csv", if_exists="append")
+        # export to postgresql database
+        export_to_database(conn, df=df_content, table="contents")
+
+        print(f"{len(df_content)} rows added to contents")
+
+    else:
+        print("0 row added to contents")
 
 
-def update_contents():
-    links = get_content_link()
-    # open web page
-    driver.get(links[0])
-    # accept cookies
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button'))).click()
-    time.sleep(1)
+######################################################### scraping #########################################################
 
-    contents = []
-    for link in links:
-        driver.get(link)
-        contents.append(get_content())
+def sql_select(conn, query):
+    cursor = conn.cursor()
+    cursor.execute(query)
 
-    df_content = pd.DataFrame(contents)
-    print(df_content)
-
-    # export to csv file
-    export_to_csv(df=df_content, file_name="content.csv", if_exists="replace")
-    # export to postgresql database
-    export_to_database(df=df_content, table="contents", if_exists="append")
-    print(f"{len(df_content)} rows added to contents")
+    return cursor.fetchall()
 
 
-def get_content():
-    contents = driver.find_elements(by=By.XPATH, value="/html/body/main/section[1]/section/section/article/p") # article
-    contents.insert(0, driver.find_element(by=By.CLASS_NAME, value="article__desc")) # article desc                                                               
-    contents = [content.text for content in contents]
-    contents = ' '.join(contents)
-
-    return contents
+def sql_execute(conn, query):
+    cursor = conn.cursor()
+    cursor.execute(query)
+    conn.commit()
 
 
-def get_content_link():
-    query = f"""
-        SELECT link
+def get_content_link(conn):
+    query = """
+        SELECT id, link
         FROM articles
-        LIMIT 5
-        """
-        # JOIN contents ON articles.id = contents.article_id
-        # WHERE contents.content IS NULL;
+        WHERE id NOT IN (
+            SELECT article_id
+            FROM contents
+            )
+        ;
+    """
 
-    conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
-    conn = create_engine(conn_string).connect()
-    df = pd.read_sql_query(sql=query, con=conn)
-    conn.close()
-
-    links = df["link"].to_list()
+    links = sql_select(conn, query)
 
     return links
+
+
+def get_content(driver, link: str):
+    driver.get(link)
+    # article desc 
+    contents_desc = driver.find_elements(by=By.CLASS_NAME, value="article__desc")          
+    # article paragraph                                                    
+    contents_paragraph = driver.find_elements(by=By.CLASS_NAME, value="article__paragraph")
+    # concat the 2 list
+    contents = contents_desc + contents_paragraph
+    # transform selenium object to string
+    contents = [content.text for content in contents]
+    content = ' '.join(contents)
+
+    return content
+
+
+def scrap_content(links):
+    # open web page
+        driver.get(links[0][1])
+
+        contents = {}
+        for link in links:
+            contents[link[0]] = get_content(driver, link[1])
+
+        df_content = pd.DataFrame(contents.items(), columns=["article_id", "content"])
+
+        return df_content
 
 
 def get_title(xpath: str):
@@ -128,6 +171,25 @@ def get_link(xpath: str):
     link = driver.find_element(by=By.XPATH, value=xpath).get_attribute('href')
 
     return link
+
+
+def save_articles(df: pd.DataFrame):
+    # save 5 last title into save.txt file for the next scrap (5 to be sure to don't miss the point cause of an eventual title rename)
+    if len(df) >= 6:
+        save_range = range(1, 6)
+    else:
+        save_range = range(1, len(df)+1)
+
+    with open("script/save.txt", "w") as f:
+        for i in save_range:
+            f.write(f'{df.iloc[-i]["title"]}\n')
+
+
+def accept_cookies(url):
+    # open web page
+    driver.get(url)
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button'))).click()
+    time.sleep(1)
 
 
 def scrap_page(page: int, stop_title: list[str], articles: list, url: str):
@@ -180,13 +242,6 @@ def scraping_journal(journal_name: str, nb_page: int=0, url: str=""):
     return dataframe
     """
 
-    # open web page
-    driver.get(url)
-
-    # accept cookies
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button'))).click()
-    time.sleep(1)
-
     # get the number of maximum pages for the scrap
     if nb_page == 0:
         driver.get(url)
@@ -204,8 +259,6 @@ def scraping_journal(journal_name: str, nb_page: int=0, url: str=""):
         if scrap_page(page, stop_title, articles, url):
             break
 
-    driver.quit()
-
     # create dataframe from dict
     df = pd.DataFrame.from_dict(articles)
     df.insert(0, "journal", journal_name)
@@ -214,6 +267,7 @@ def scraping_journal(journal_name: str, nb_page: int=0, url: str=""):
 
     return df
 
+######################################################### handling data #########################################################
 
 def convert_date(df: pd.DataFrame):
     """
@@ -251,17 +305,7 @@ def convert_date(df: pd.DataFrame):
     return df
 
 
-def save_articles(df: pd.DataFrame):
-    # save 5 last title into save.txt file for the next scrap (5 to be sure to don't miss the point cause of an eventual title rename)
-    if len(df) >= 6:
-        save_range = range(1, 6)
-    else:
-        save_range = range(1, len(df)+1)
-
-    with open("script/save.txt", "w") as f:
-        for i in save_range:
-            f.write(f'{df.iloc[-i]["title"]}\n')
-
+######################################################### export #########################################################
 
 def export_to_csv(df: pd.DataFrame, file_name: str, if_exists: str="replace"):
     """
@@ -282,11 +326,13 @@ def export_to_database(conn, df: pd.DataFrame, table: str):
     # save dataframe to an in memory buffer
     cols = tuple(df.columns)
     buffer = StringIO()
+    # export
     df.to_csv(buffer, header=False, index=False, sep=";")
     buffer.seek(0)
     cursor = conn.cursor()
     cursor.copy_from(buffer, table, sep=";", columns=cols)
     conn.commit()
+
 
 
 if __name__ == "__main__":
