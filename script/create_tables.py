@@ -22,19 +22,32 @@ def create_tables():
     cursor = conn.cursor()
     
     # create table
-    sql = f'''
-        CREATE TABLE articles (
+    queries = [
+        """
+        CREATE TABLE IF NOT EXISTS articles (
             id SERIAL PRIMARY KEY,
             journal VARCHAR(50),
             title VARCHAR(255),
             date TIMESTAMP,
             link VARCHAR(255)
-        )
-        '''
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS contents (
+            id SERIAL PRIMARY KEY,
+            article_id INTEGER NOT NULL,
+            content TEXT,
+            nb_words INTEGER,
+            FOREIGN KEY (article_id)
+            REFERENCES articles (id)
+        );
+        """
+    ]
     
     # Executing the query
-    cursor.execute(sql)
-    print("Table created !")
+    for query in queries:
+        cursor.execute(query)
+        print("Table created !")
     
     # Commit your changes in the database
     conn.commit()
