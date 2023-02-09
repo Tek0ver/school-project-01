@@ -1,9 +1,16 @@
+import config
 # selenium 4, scraping library
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
-service = ChromeService(executable_path=ChromeDriverManager().install())
-driver = webdriver.Chrome(service=service)
+options = webdriver.ChromeOptions()
+if config.headless:
+    options.add_argument("--headless")
+options.add_argument("--disable-gpu")
+driver = webdriver.Chrome(
+    service=ChromeService(ChromeDriverManager().install()),
+    options=options,
+    )
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -16,34 +23,164 @@ from datetime import date
 from datetime import timedelta
 
 # sql
-from sqlalchemy import create_engine
+import psycopg2
+from io import StringIO
+# from sqlalchemy import create_engine
 
 # system
 from os import environ
 
 
 def main():
-    df_le_monde = scraping_le_monde(nb_page=1)
-    # convert date column to datetime format
+    start_time = time.time()
+
+    # connection to database
+    conn = psycopg2.connect(**config.param_dict)
+
+    # update database
+    update_articles(conn)
+    # update_contents()
+
+    conn.close()
+
+    # get execute time
+    print(f"{round(time.time() - start_time, 2)} seconds")
+
+
+def update_articles(conn):
+    df_le_monde = scraping_journal(journal_name="le monde", nb_page=config.nb_page, url="https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=01%2F01%2F2021&search_sort=dateCreated_desc")
     if len(df_le_monde) > 0:
+        # convert date column to datetime format
         df_le_monde = convert_date(df_le_monde)
+        # export to csv file
+        export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="replace")
+        # export to postgresql database
+        export_to_database(conn, df=df_le_monde, table="articles")
+        save_articles(df_le_monde)
+
+    print(f"{len(df_le_monde)} rows added to articles")
+
+
+def update_contents():
+    links = get_content_link()
+    # open web page
+    driver.get(links[0])
+    # accept cookies
+    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button'))).click()
+    time.sleep(1)
+
+    contents = []
+    for link in links:
+        driver.get(link)
+        contents.append(get_content())
+
+    df_content = pd.DataFrame(contents)
+    print(df_content)
+
     # export to csv file
-    export_to_csv(df=df_le_monde, file_name="le_monde.csv", if_exists="replace")
+    export_to_csv(df=df_content, file_name="content.csv", if_exists="replace")
     # export to postgresql database
-    export_to_database(df=df_le_monde, table="le_monde", if_exists="append")
-    print(f"{len(df_le_monde)} rows added to database")
+    export_to_database(df=df_content, table="contents", if_exists="append")
+    print(f"{len(df_content)} rows added to contents")
 
 
+def get_content():
+    contents = driver.find_elements(by=By.XPATH, value="/html/body/main/section[1]/section/section/article/p") # article
+    contents.insert(0, driver.find_element(by=By.CLASS_NAME, value="article__desc")) # article desc                                                               
+    contents = [content.text for content in contents]
+    contents = ' '.join(contents)
 
-def scraping_le_monde(nb_page: int=0, driver=driver):
+    return contents
+
+
+def get_content_link():
+    query = f"""
+        SELECT link
+        FROM articles
+        LIMIT 5
+        """
+        # JOIN contents ON articles.id = contents.article_id
+        # WHERE contents.content IS NULL;
+
+    conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
+    conn = create_engine(conn_string).connect()
+    df = pd.read_sql_query(sql=query, con=conn)
+    conn.close()
+
+    links = df["link"].to_list()
+
+    return links
+
+
+def get_title(xpath: str):
+    title = driver.find_element(by=By.XPATH, value=xpath)
+
+    return title
+
+
+def get_date(xpath: str):
+    dates = driver.find_elements(by=By.XPATH, value=xpath)
+
+    return dates
+
+
+def get_link(xpath: str):
+    link = driver.find_element(by=By.XPATH, value=xpath).get_attribute('href')
+
+    return link
+
+
+def scrap_page(page: int, stop_title: list[str], articles: list, url: str):
+    stop = False
+    url = f"{url}&page={page}"
+    driver.get(url)
+    titles = []
+    links = []
+    i = 1
+    end = 0
+    while end < 5:
+        try:
+            title_article = get_title(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a/h3')
+            link_article = get_link(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a')
+                            
+            if title_article.text in stop_title:
+                # stop title (from the save.txt file) reached, so break the while loop
+                # set stop = True to break the for loop too
+                stop = True
+                break
+            else:
+                # get title
+                titles.append(title_article)
+                # get link
+                links.append(link_article)
+
+                # reinitialize end because we found a new article so it's not end page
+                end = 0
+        except:
+            # ad or end page: count until 5 to be sure it's the end page and not an ad
+            end += 1
+        # go to next article
+        i += 1
+
+    dates = get_date(xpath='/html/body/main/article/section/section[1]/section[2]/section[3]/section/p/span[1]')
+
+    # append scraped title, content and date to articles list of dict
+    for title, date, link in zip(titles, dates, links):
+        articles.append({"title": title.text, "date": date.text, "link":link})
+
+    if stop:
+        # stop title (from the save.txt file) reached, so break the for loop
+        return True
+
+
+def scraping_journal(journal_name: str, nb_page: int=0, url: str=""):
     """
-    scrap website until the last article scraped last time\n
+    scrap website until the last article scraped last time \n
     nb_page : int, default 0 for all pages \n
     return dataframe
     """
 
     # open web page
-    url = f"https://www.lemonde.fr/recherche/?search_keywords=ukraine&search_sort=dateCreated_desc&page=1"
     driver.get(url)
 
     # accept cookies
@@ -63,71 +200,19 @@ def scraping_le_monde(nb_page: int=0, driver=driver):
     with open("script/save.txt") as f:
         stop_title = f.read().splitlines()
 
-    stop = False
     for page in range(1, nb_page+1):
-        url = f"https://www.lemonde.fr/recherche/?search_keywords=ukraine&search_sort=dateCreated_desc&page={page}"
-        driver.get(url)
-        driver_title = []
-        driver_content = []
-        i = 1
-        end = 0
-        while end < 5:
-            try:
-                title_article = driver.find_element(by=By.XPATH, value=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a/h3')
-                if title_article.text in stop_title:
-                    # stop title (from the save.txt file) reached, so break the while loop
-                    # set stop = True to break the for loop too
-                    stop = True
-                    break
-                else:
-                    # get title
-                    driver_title.append(title_article.text)
-
-                    # get content
-                    title_article.click()
-                    contents = driver.find_elements(by=By.XPATH, value="/html/body/main/section[1]/section/section/article/p") # article
-                    contents.insert(0, driver.find_element(by=By.CLASS_NAME, value="article__desc")) # article desc                                                               
-                    contents = [content.text for content in contents]
-                    driver_content.append(contents[0])
-
-                    # back to url for next article
-                    driver.get(url)
-
-                    # reinitialize end because we found a new article so it's not end page
-                    end = 0
-            except:
-                # ad or end page: count until 5 to be sure it's the end page and not an ad
-                end += 1
-            # go to next article
-            i += 1
-
-        driver_date = driver.find_elements(by=By.XPATH, value='/html/body/main/article/section/section[1]/section[2]/section[3]/section/p/span[1]')
-        # append scraped title, content and date to articles list of dict
-
-        for title, content, date in zip(driver_title, driver_content, driver_date):
-            articles.append({"title": title, "content": content, "date": date.text})
-
-        if stop:
-            # stop title (from the save.txt file) reached, so break the for loop
+        if scrap_page(page, stop_title, articles, url):
             break
 
     driver.quit()
 
-    # save 5 last title into save.txt file for the next scrap (5 to be sure to don't miss the point cause of an eventual title rename)
-    if len(articles) >= 5:
-        with open("script/save.txt", "w") as f:
-            for i in range(5):
-                f.write(f'{articles[i]["title"]}\n')
-    # same thing but if less than 5 titles scraped
-    elif len(articles) > 0:
-        with open("script/save.txt", "w") as f:
-            for i in range(len(articles)):
-                f.write(f'{articles[i]["title"]}\n')
-
     # create dataframe from dict
     df = pd.DataFrame.from_dict(articles)
+    df.insert(0, "journal", journal_name)
 
-    return df[::-1]
+    df = df[::-1].reset_index(drop=True)
+
+    return df
 
 
 def convert_date(df: pd.DataFrame):
@@ -166,6 +251,18 @@ def convert_date(df: pd.DataFrame):
     return df
 
 
+def save_articles(df: pd.DataFrame):
+    # save 5 last title into save.txt file for the next scrap (5 to be sure to don't miss the point cause of an eventual title rename)
+    if len(df) >= 6:
+        save_range = range(1, 6)
+    else:
+        save_range = range(1, len(df)+1)
+
+    with open("script/save.txt", "w") as f:
+        for i in save_range:
+            f.write(f'{df.iloc[-i]["title"]}\n')
+
+
 def export_to_csv(df: pd.DataFrame, file_name: str, if_exists: str="replace"):
     """
     export df to csv
@@ -177,14 +274,19 @@ def export_to_csv(df: pd.DataFrame, file_name: str, if_exists: str="replace"):
         df.to_csv(f'data/{file_name}', mode='a', index=False, header=False)
 
 
-def export_to_database(df: pd.DataFrame, table: str, if_exists: str="append"):
+
+def export_to_database(conn, df: pd.DataFrame, table: str):
     """
-    export to postgresql database
-    if_exists : {'fail', 'replace', 'append'}, default 'append'
+    export to postgresql table
     """
-    conn_string = f'postgresql://{environ["POSTGRES_USER"]}:{environ["POSTGRES_PASSWORD"]}@{environ["POSTGRES_HOST"]}/{environ["POSTGRES_DB"]}'
-    conn = create_engine(conn_string).connect()
-    df.to_sql(name=table, con=conn, if_exists=if_exists, index=False)
+    # save dataframe to an in memory buffer
+    cols = tuple(df.columns)
+    buffer = StringIO()
+    df.to_csv(buffer, header=False, index=False, sep=";")
+    buffer.seek(0)
+    cursor = conn.cursor()
+    cursor.copy_from(buffer, table, sep=";", columns=cols)
+    conn.commit()
 
 
 if __name__ == "__main__":
