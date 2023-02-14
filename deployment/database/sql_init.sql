@@ -1,3 +1,5 @@
+CREATE DATABASE vinci;
+
 CREATE TABLE articles (
     id SERIAL PRIMARY KEY,
     journal VARCHAR(50),
@@ -15,6 +17,12 @@ CREATE TABLE contents (
     REFERENCES articles (id)
 );
 
+CREATE TABLE cities (
+    id SERIAL PRIMARY KEY,
+    city VARCHAR (50),
+    population_2022 INTEGER
+);
+
 CREATE TABLE content_cities (
     id SERIAL PRIMARY KEY,
     content_id INTEGER NOT NULL,
@@ -24,10 +32,4 @@ CREATE TABLE content_cities (
     REFERENCES contents (id),
     FOREIGN KEY (city_id)
     REFERENCES cities (id)
-);
-
-CREATE TABLE content_cities (
-    id SERIAL PRIMARY KEY,
-    city VARCHAR (50),
-    population_2022 INTEGER
 );
