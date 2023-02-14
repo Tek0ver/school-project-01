@@ -22,3 +22,4 @@ services:
 
   scraper:
     build: ./scraper
+    container_name: "scraper"
