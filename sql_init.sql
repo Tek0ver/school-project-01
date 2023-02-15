@@ -15,6 +15,13 @@ CREATE TABLE contents (
     REFERENCES articles (id)
 );
 
+CREATE TABLE cities (
+    id SERIAL PRIMARY KEY,
+    city VARCHAR (50),
+    population_2022 INTEGER
+);
+
+
 CREATE TABLE content_cities (
     id SERIAL PRIMARY KEY,
     content_id INTEGER NOT NULL,
@@ -26,8 +33,3 @@ CREATE TABLE content_cities (
     REFERENCES cities (id)
 );
 
-CREATE TABLE content_cities (
-    id SERIAL PRIMARY KEY,
-    city VARCHAR (50),
-    population_2022 INTEGER
-);
