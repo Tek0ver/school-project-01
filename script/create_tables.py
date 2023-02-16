@@ -11,7 +11,7 @@ def create_tables():
     """
     create a table set in parameter
     """
-    conn=psycopg2.connect(
+    conn = psycopg2.connect(
         database=environ["POSTGRES_DB"],
         user=environ["POSTGRES_USER"],
         password=environ["POSTGRES_PASSWORD"],
