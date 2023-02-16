@@ -161,8 +161,7 @@ def scrap_content(links):
 
 def get_title(xpath: str):
     title = driver.find_element(by=By.XPATH, value=xpath)
-    print(title)
-    print("1")
+    print(title.text)
 
     return title
 
@@ -186,16 +185,16 @@ def save_articles(df: pd.DataFrame):
     else:
         save_range = range(1, len(df)+1)
 
-    with open("script/save.txt", "w") as f:
-        for i in save_range:
-            f.write(f'{df.iloc[-i]["title"]}\n')
+    # with open("save.txt", "w") as f:
+    #     for i in save_range:
+    #         f.write(f'{df.iloc[-i]["title"]}\n')
 
 
 def accept_cookies(url):
     # open web page
     driver.get(url)
     WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button'))).click()
-    time.sleep(1)
+    time.sleep(6)
 
 
 def scrap_page(page: int, stop_title, articles, url: str):
@@ -206,10 +205,8 @@ def scrap_page(page: int, stop_title, articles, url: str):
     links = []
     i = 1
     end = 0
-    print("2")
     while end < 5:
         try:
-            print("3")
             title_article = get_title(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a/h3')
             link_article = get_link(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a')
                             
@@ -260,12 +257,13 @@ def scraping_journal(journal_name: str, nb_page: int=0, url: str=""):
     articles = []
 
     # read the save.txt file where are saved last titles scraped from last scraped to define when to stop the current scrap
-    file = Path("scraper/save.txt")
+    file = Path("save.txt")
     if file.is_file():
-        with open("scraper/save.txt") as f:
+        with open("save.txt") as f:
             stop_title = f.read().splitlines()
     else:
         stop_title = ""
+    stop_title = ""
 
     for page in range(1, nb_page+1):
         if scrap_page(page, stop_title, articles, url):
@@ -311,8 +309,8 @@ def convert_date(df: pd.DataFrame):
 
     df['month'] = df["month"].replace(month_dict)
     df['date'] = df['year'] + '/' + df['month'] + '/' + df['day'] + ' ' + df["hour"] + ':' + df["minute"]
-    df['date'] = pd.to_datetime(df['date'])
-    df.drop(columns = ['day', 'month', 'year', 'hour', 'minute'], inplace=True)
+    df['article_date'] = pd.to_datetime(df['date'])
+    df.drop(columns = ['day', 'month', 'year', 'hour', 'minute', 'date'], inplace=True)
 
     return df
 
@@ -327,15 +325,13 @@ def export_to_csv(df: pd.DataFrame, file_name: str, if_exists: str="replace"):
     if if_exists == "replace":
         df.to_csv(f'data/{file_name}', index=False)
     elif if_exists == "append":
-        df.to_csv(f'data/{file_name}', mode='a', index=False, header=False)
-
+        df.to_csv(f'{file_name}', mode='a', index=False, header=False)
 
 
 def export_to_database(conn, df: pd.DataFrame, table: str):
     """
     export to postgresql table
     """
-    print(df)
     # save dataframe to an in memory buffer
     cols = tuple(df.columns)
     buffer = StringIO()

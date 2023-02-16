@@ -1,7 +1,7 @@
 # connection parameters to sql server
 param_dict = {
-    "host"      : "localhost",
-    "database"  : "vinci",
+    "host"      : "postgres",
+    "database"  : "postgres",
     "user"      : "postgres",
     "password"  : "postgres"
 }
