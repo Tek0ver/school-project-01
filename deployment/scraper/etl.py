@@ -1,5 +1,8 @@
 import config
 
+#  system
+from pathlib import Path
+
 # python
 import pandas as pd
 import time
@@ -10,7 +13,7 @@ from datetime import timedelta
 import psycopg2
 from io import StringIO
 
-# selenium 4, scraping library
+# selenium 4
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
@@ -19,9 +22,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 # init driver
 options = webdriver.ChromeOptions()
+options.add_argument('--no-sandbox')
+options.add_argument("--disable-gpu")
 if config.headless:
     options.add_argument("--headless")
-options.add_argument("--disable-gpu")
 driver = webdriver.Chrome(
     service=ChromeService(ChromeDriverManager().install()),
     options=options,
@@ -31,13 +35,13 @@ driver = webdriver.Chrome(
 def main():
     start_time = time.time()
 
-    update_database(contents=False)
+    update_database()
 
     # get execute time
     print(f"{round(time.time() - start_time, 2)} seconds")
 
 
-def update_database(articles: bool=True, contents: bool=True):
+def update_database():
     # connection to database
     conn = psycopg2.connect(**config.param_dict)
 
@@ -45,10 +49,10 @@ def update_database(articles: bool=True, contents: bool=True):
     accept_cookies("https://www.lemonde.fr")
 
     # update database
-    if articles:
+    if config.article:
         update_articles(conn)
 
-    if contents:
+    if config.content:
         update_contents(conn)
 
     # quit selenium driver
@@ -252,8 +256,12 @@ def scraping_journal(journal_name: str, nb_page: int=0, url: str=""):
     articles = []
 
     # read the save.txt file where are saved last titles scraped from last scraped to define when to stop the current scrap
-    with open("script/save.txt") as f:
-        stop_title = f.read().splitlines()
+    file = Path("scraper/save.txt")
+    if file.is_file():
+        with open("scraper/save.txt") as f:
+            stop_title = f.read().splitlines()
+    else:
+        stop_title = ""
 
     for page in range(1, nb_page+1):
         if scrap_page(page, stop_title, articles, url):

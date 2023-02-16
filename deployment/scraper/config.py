@@ -11,3 +11,7 @@ nb_page = 1
 
 # headless mod for selenium driver
 headless = True
+
+# choose what you want update
+article = True
+content = False
