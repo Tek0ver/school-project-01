@@ -43,7 +43,7 @@ def main():
 
 def update_database():
     # connection to database
-    conn = psycopg2.connect(**config.param_dict)
+    conn = psycopg2.connect(config.azure_conn_user)
 
     # cookies
     accept_cookies("https://www.lemonde.fr")

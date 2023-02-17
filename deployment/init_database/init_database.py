@@ -1,6 +1,5 @@
 import psycopg2
-from os import environ
-
+import config
 
 
 def main():
@@ -11,13 +10,7 @@ def create_tables():
     """
     create a table set in parameter
     """
-    conn=psycopg2.connect(
-        database=environ["POSTGRES_DB"],
-        user=environ["POSTGRES_USER"],
-        password=environ["POSTGRES_PASSWORD"],
-        host=environ["POSTGRES_HOST"],
-        port="5432"
-    )
+    conn=psycopg2.connect(config.azure_conn_user)
     
     cursor = conn.cursor()
     
