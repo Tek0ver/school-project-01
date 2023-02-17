@@ -23,3 +23,5 @@ services:
   scraper:
     build: ./scraper
     container_name: "scraper"
+    volumes:
+      - /dev/shm:/dev/shm

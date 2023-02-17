@@ -14,4 +14,4 @@ headless = True
 
 # choose what you want update
 article = True
-content = False
+content = True
