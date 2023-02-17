@@ -14,4 +14,11 @@ headless = True
 
 # choose what you want update
 article = True
-content = True
+content = False
+
+# export
+csv = False
+database = True
+
+# scrap only most recent articles than last time
+only_new_articles = True

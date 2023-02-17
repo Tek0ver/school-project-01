@@ -1,2 +1,1 @@
 - webdriver.wait a la place du sleep
-- save with select and not file
