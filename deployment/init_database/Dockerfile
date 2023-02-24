@@ -1,13 +1,13 @@
-# app/Dockerfile
-
 FROM python:3.9-slim
 
 WORKDIR /app
 
-RUN apt-get
+COPY init_database/requirements.txt .
 
+RUN apt-get update -y
 RUN pip3 install -r requirements.txt
 
-COPY . .
+COPY init_database/init_database.py .
+COPY config.py .
 
 CMD ["python3", "init_database.py"]

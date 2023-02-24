@@ -1,1 +1,2 @@
 - webdriver.wait a la place du sleep
+- credential secret
