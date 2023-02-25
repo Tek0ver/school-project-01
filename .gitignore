@@ -3,4 +3,4 @@ __pycache__
 .python-version
 deployment/data/
 deployment/db/
-secret/
+deployment/secret/

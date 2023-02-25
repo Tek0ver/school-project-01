@@ -30,6 +30,7 @@ driver = webdriver.Chrome(
 
 
 def main():
+    print("start to scrap")
     start_time = time.time()
 
     update_database()
@@ -41,6 +42,7 @@ def main():
 def update_database():
     # connection to database
     conn = psycopg2.connect(config.azure_conn_user)
+    print("connected successfully")
 
     # cookies
     accept_cookies("https://www.lemonde.fr")
@@ -60,6 +62,7 @@ def update_database():
 
 
 def update_articles(conn):
+    print("start to scrap articles")
     # create df
     df_le_monde = scraping_journal(conn, journal_name="le monde", nb_page=config.nb_page, url="https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=01%2F01%2F2021&search_sort=dateCreated_desc")
     if len(df_le_monde) > 0:
@@ -81,6 +84,7 @@ def update_articles(conn):
 def update_contents(conn):
     # get links of each articles
     links = get_content_link(conn)
+    print(f"start to scrap {len(links)} contents")
     if len(links) > 0:
         # create df
         df_content = scrap_content(links)
@@ -139,6 +143,7 @@ def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
         stop_title = ""
         
     for page in range(1, nb_page+1):
+        print(f"page {page} is scraping...")
         if scrap_page(page, stop_title, articles, url):
             break
 
@@ -255,15 +260,20 @@ def get_content(driver, link: str):
 
 def scrap_content(links):
     # open web page
-        driver.get(links[0][1])
+    driver.get(links[0][1])
 
-        contents = {}
-        for link in links:
-            contents[link[0]] = get_content(driver, link[1])
+    print("start to scrap contents...")
+    contents = {}
+    count = 0
+    for link in links:
+        contents[link[0]] = get_content(driver, link[1])
+        if count % 50 == 0:
+            print(f"{count+1} contents scraped...")
+        count += 1
 
-        df_content = pd.DataFrame(contents.items(), columns=["article_id", "content"])
+    df_content = pd.DataFrame(contents.items(), columns=["article_id", "content"])
 
-        return df_content
+    return df_content
 
 
 def get_title(xpath: str):
