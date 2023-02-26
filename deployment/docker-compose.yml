@@ -19,9 +19,13 @@ services:
     container_name: "streamlit"
     ports:
       - "8501:8501"
-
-  scraper:
-    build: ./scraper
-    container_name: "scraper"
     volumes:
-      - /dev/shm:/dev/shm
+      - type: bind
+        source: ./streamlit/streamlit
+        target: /app/streamlit
+
+  # scraper:
+  #   build: ./scraper
+  #   container_name: "scraper"
+  #   volumes:
+  #     - /dev/shm:/dev/shm

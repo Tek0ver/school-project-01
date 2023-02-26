@@ -9,10 +9,13 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
+# Use on azure
 COPY deployment/streamlit .
+# Use for local
+# COPY ./requirements.txt .
 
 RUN pip3 install -r requirements.txt
 
 EXPOSE 8501
 
-ENTRYPOINT ["streamlit", "run", "streamlit-test.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "./streamlit/streamlit-test.py", "--server.port=8501", "--server.address=0.0.0.0"]
