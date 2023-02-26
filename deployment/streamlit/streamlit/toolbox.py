@@ -1,15 +1,17 @@
 import settings
 import psycopg2
 import pandas as pd
+import config
 
 class DatabaseInterface:
 
     def __init__(self, mode):
         if mode == 'local':
             self.conn = psycopg2.connect(**settings.database)
-            self.cursor = self.conn.cursor()
         if mode == 'azure':
-            self.conn = 0
+            self.conn = psycopg2.connect(config.azure_conn_user)
+
+        self.cursor = self.conn.cursor()
 
     def select(self, query: str) -> pd.DataFrame:
         self.cursor.execute(query)

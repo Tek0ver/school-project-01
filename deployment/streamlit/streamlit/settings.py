@@ -1,4 +1,5 @@
 # postgres database
+# for local use
 database = {"host" : "postgres",
             "database" : "postgres",
             "user" : "postgres",

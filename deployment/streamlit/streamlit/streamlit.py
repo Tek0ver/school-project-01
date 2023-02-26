@@ -1,5 +1,4 @@
 import streamlit as st
-import settings
 import psycopg2
 import pandas as pd
 from toolbox import DatabaseInterface
@@ -7,7 +6,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 
 # mode = local or azure
-mode = 'local'
+mode = 'azure'
+# TODO: group with other conf files
 
 databaseInterface = DatabaseInterface(mode)
 
