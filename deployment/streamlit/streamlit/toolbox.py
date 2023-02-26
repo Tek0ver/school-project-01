@@ -9,7 +9,7 @@ class DatabaseInterface:
             self.conn = psycopg2.connect(**settings.database)
             self.cursor = self.conn.cursor()
         if mode == 'azure':
-            self.conn = 
+            self.conn = 0
 
     def select(self, query: str) -> pd.DataFrame:
         self.cursor.execute(query)
