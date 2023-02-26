@@ -10,12 +10,15 @@ azure_conn_user = f"host=vinci-db.postgres.database.azure.com port=5432 dbname={
 # number of page to scrap (set 0 for all)
 nb_page = 0
 
+# size of batch of contents to export
+batch_size = 10
+
 # headless mod for selenium driver
 headless = True
 
 # choose what you want update
 article = True
-content = False
+content = True
 
 # export
 csv = False

@@ -1,4 +1,4 @@
-docker build -t streamlit:1 -f streamlit/Dockerfile .
+docker build -t streamlit:1 -f deployment/streamlit/Dockerfile .
 docker tag streamlit:1 vincipubliccr.azurecr.io/streamlit:1
 docker push vincipubliccr.azurecr.io/streamlit:1
 az container create \

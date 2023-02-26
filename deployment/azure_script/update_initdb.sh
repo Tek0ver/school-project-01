@@ -1,4 +1,4 @@
-docker build -t init_database:1 -f init_database/Dockerfile .
+docker build -t init_database:1 -f deployment/init_database/Dockerfile .
 docker tag init_database:1 vincipubliccr.azurecr.io/init_database:1
 docker push vincipubliccr.azurecr.io/init_database:1
 az container create \

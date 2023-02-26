@@ -82,26 +82,30 @@ def update_articles(conn):
     
 
 def update_contents(conn):
-    # get links of each articles
-    links = get_content_link(conn)
-    print(f"start to scrap {len(links)} contents")
-    if len(links) > 0:
-        # create df
-        df_content = scrap_content(links)
-        # make sure df is in correct format
-        df_content = df_content.replace('\n','', regex=True)
-        df_content = df_content.replace(';','', regex=True)
-        if config.csv:
-            # export to csv file
-            export_to_csv(df=df_content, file_name="content.csv", if_exists="append")
-        if config.database:
-            # export to postgresql database
-            export_to_database(conn, df=df_content, table="contents")
+    scraping = True
+    while scraping:
+        # get links of each articles
+        links = get_content_link(conn, batch_size=config.batch_size)
+        if len(links) > 0:
+            print(f"start to scrap {len(links)} contents")
+            # create df
+            df_content = scrap_content(links)
+            print(df_content)
+            # make sure df is in correct format
+            df_content = df_content.replace('\n','', regex=True)
+            df_content = df_content.replace(';','', regex=True)
+            if config.csv:
+                # export to csv file
+                export_to_csv(df=df_content, file_name="content.csv", if_exists="append")
+            if config.database:
+                # export to postgresql database
+                export_to_database(conn, df=df_content, table="contents")
 
-        print(f"{len(df_content)} rows added to contents")
+            print(f"{len(df_content)} rows added to contents")
+        else:
+            scraping = False
 
-    else:
-        print("0 row added to contents")
+    print("no content to scrap")
 
 
 
@@ -227,14 +231,16 @@ def sql_execute(conn, query):
     conn.commit()
 
 
-def get_content_link(conn):
-    query = """
+def get_content_link(conn, batch_size: int):
+    query = f"""
         SELECT id, link
         FROM articles
         WHERE id NOT IN (
             SELECT article_id
             FROM contents
             )
+        ORDER BY id ASC
+        LIMIT {batch_size}
         ;
     """
 
@@ -244,13 +250,14 @@ def get_content_link(conn):
 
 
 def get_content(driver, link: str):
+    # get content
     driver.get(link)
-    # article desc 
-    contents_desc = driver.find_elements(by=By.CLASS_NAME, value="article__desc")          
-    # article paragraph                                                    
-    contents_paragraph = driver.find_elements(by=By.CLASS_NAME, value="article__paragraph")
+    contents_desc = driver.find_elements(by=By.CSS_SELECTOR, value=".article__desc")                        
+    contents_paragraph = driver.find_elements(by=By.XPATH, value="/html/body/main/section[1]/section/section/article")
+    contents_live = driver.find_elements(by=By.XPATH, value='//*[@id="post-container"]')
+    contents_post = driver.find_elements(by=By.XPATH, value='//*[@id="main"]/article')
     # concat the 2 list
-    contents = contents_desc + contents_paragraph
+    contents = contents_desc + contents_paragraph + contents_live + contents_post
     # transform selenium object to string
     contents = [content.text for content in contents]
     content = ' '.join(contents)
@@ -265,9 +272,10 @@ def scrap_content(links):
     print("start to scrap contents...")
     contents = {}
     count = 0
+    # contents = {"article_id": "content", ...}
     for link in links:
         contents[link[0]] = get_content(driver, link[1])
-        if count % 50 == 0:
+        if count % 10 == 0:
             print(f"{count+1} contents scraped...")
         count += 1
 

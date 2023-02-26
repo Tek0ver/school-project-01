@@ -1,3 +1,3 @@
 - webdriver.wait a la place du sleep
 - optimiser les requirements.txt
-- variable env dans les fichiers update....sh
+- azure function

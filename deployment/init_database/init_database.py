@@ -5,7 +5,7 @@ import psycopg2
 def main():
     if not exist(config.database_name):
         create_database(config.database_name)
-        create_tables()
+    create_tables()
 
 
 
