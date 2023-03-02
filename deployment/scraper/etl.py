@@ -30,7 +30,7 @@ driver = webdriver.Chrome(
 
 
 def main():
-    print("start to scrap")
+    print("starting...")
     start_time = time.time()
 
     update_database()
@@ -42,7 +42,7 @@ def main():
 def update_database():
     # connection to database
     conn = psycopg2.connect(config.azure_conn_user)
-    print("connected successfully")
+    print("connected")
 
     # cookies
     accept_cookies("https://www.lemonde.fr")
@@ -90,7 +90,6 @@ def update_contents(conn):
             print(f"start to scrap {len(links)} contents")
             # create df
             df_content = scrap_content(links)
-            print(df_content)
             # make sure df is in correct format
             df_content = df_content.replace('\n','', regex=True)
             df_content = df_content.replace(';','', regex=True)
@@ -105,7 +104,7 @@ def update_contents(conn):
         else:
             scraping = False
 
-    print("no content to scrap")
+    print("content scraped")
 
 
 
@@ -146,9 +145,11 @@ def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
     else:
         stop_title = ""
         
+    print(f"stop title: {stop_title}")
     for page in range(1, nb_page+1):
         print(f"page {page} is scraping...")
         if scrap_page(page, stop_title, articles, url):
+            print("stop reached")
             break
 
     # create dataframe from dict
@@ -191,6 +192,7 @@ def scrap_page(page: int, stop_title, articles, url: str):
             if title_article.text in stop_title:
                 # stop title reached, so break the while loop
                 # set stop = True to break the for loop too
+                print(f"{title_article.text} + {link_article} already scraped from last run")
                 stop = True
                 break
             else:
