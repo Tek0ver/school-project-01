@@ -1,8 +1,24 @@
--- select duplicates
-SELECT title, article_date, link, count(*) 
+-- select duplicates articles
+SELECT link, count(*) 
 FROM articles
-GROUP BY title, article_date, link
+GROUP BY link
 HAVING count(*) > 1
+;
+
+-- select duplicates contents
+SELECT content, count(*) 
+FROM contents
+GROUP BY content
+HAVING count(*) > 1
+;
+
+
+SELECT MIN(id), MAX(article_id), count(*)
+FROM contents
+GROUP BY content
+HAVING count(*) > 1
+ORDER BY count(*) DESC
+LIMIT 5
 ;
 
 

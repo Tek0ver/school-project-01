@@ -11,7 +11,7 @@ az container create \
     --location westeurope \
     --restart-policy OnFailure
 
-    # use volume if --shm-size dont work, but before that try to increase shm size(500mb seem to work)
+    # use volume if --shm-size dont work, but before that try to increase shm size(500mb work)
     # --azure-file-volume-account-name dockervolumevincipublic \
     # --azure-file-volume-account-key $AZURE_FILE_VOLUME_ACCOUNT_KEY \
     # --azure-file-volume-share-name shm \

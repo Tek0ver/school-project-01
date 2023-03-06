@@ -270,16 +270,10 @@ def get_content(driver, link: str):
 def scrap_content(links):
     # open web page
     driver.get(links[0][1])
-
-    print("start to scrap contents...")
     contents = {}
-    count = 0
     # contents = {"article_id": "content", ...}
     for link in links:
         contents[link[0]] = get_content(driver, link[1])
-        if count % 10 == 0:
-            print(f"{count+1} contents scraped...")
-        count += 1
 
     df_content = pd.DataFrame(contents.items(), columns=["article_id", "content"])
 
