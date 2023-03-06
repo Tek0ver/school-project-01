@@ -5,11 +5,7 @@ from toolbox import DatabaseInterface
 import matplotlib.pyplot as plt
 from datetime import datetime
 
-# mode = local or azure
-mode = 'azure'
-# TODO: group with other conf files
-
-databaseInterface = DatabaseInterface(mode)
+databaseInterface = DatabaseInterface()
 
 @st.cache_data()
 def load_data(query):

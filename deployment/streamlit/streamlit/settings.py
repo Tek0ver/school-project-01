@@ -1,3 +1,6 @@
+mode = 'local'
+# mode = 'azure'
+
 # postgres database
 # for local use
 database = {"host" : "postgres",

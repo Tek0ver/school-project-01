@@ -10,9 +10,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Use on azure
-COPY deployment/streamlit .
+# COPY deployment/streamlit .
 # Use for local
-# COPY ./requirements.txt .
+COPY ./requirements.txt .
 
 RUN pip3 install -r requirements.txt
 

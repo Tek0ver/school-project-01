@@ -5,10 +5,10 @@ import config
 
 class DatabaseInterface:
 
-    def __init__(self, mode):
-        if mode == 'local':
+    def __init__(self):
+        if settings.mode == 'local':
             self.conn = psycopg2.connect(**settings.database)
-        if mode == 'azure':
+        if settings.mode == 'azure':
             self.conn = psycopg2.connect(config.azure_conn_user)
 
         self.cursor = self.conn.cursor()
