@@ -21,7 +21,6 @@ ORDER BY count(*) DESC
 LIMIT 5
 ;
 
-
 -- delete by id 
 DELETE FROM articles WHERE id > 8200;
 
