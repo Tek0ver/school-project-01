@@ -17,7 +17,7 @@ batch_size = 10
 headless = True
 
 # choose what you want update
-article = True
+article = False
 content = True
 
 # export
