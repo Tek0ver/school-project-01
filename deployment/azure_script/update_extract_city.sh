@@ -1,4 +1,4 @@
-docker build -t extract_city:1 --shm-size 2gb -f deployment/extract_city/Dockerfile .
+docker build -t extract_city:1 --shm-size 2gb -f deployment/scraper/extract_city/Dockerfile .
 docker tag extract_city:1 vincipubliccr.azurecr.io/extract_city:1
 docker push vincipubliccr.azurecr.io/extract_city:1
 az container create \

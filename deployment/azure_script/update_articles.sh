@@ -1,10 +1,10 @@
-docker build -t contents:1 --shm-size 500mb -f deployment/scraper/Dockerfile .
-docker tag contents:1 vincipubliccr.azurecr.io/contents:1
-docker push vincipubliccr.azurecr.io/contents:1
+docker build -t articles:1 --shm-size 500mb -f deployment/scraper/articles/Dockerfile .
+docker tag articles:1 vincipubliccr.azurecr.io/articles:1
+docker push vincipubliccr.azurecr.io/articles:1
 az container create \
     --resource-group school-project-public-rg \
-    --name contents \
-    --image vincipubliccr.azurecr.io/contents:1 \
+    --name articles \
+    --image vincipubliccr.azurecr.io/articles:1 \
     --registry-username vincipubliccr \
     --registry-password $REGISTRY_PASSWORD \
     --secure-environment-variables POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
