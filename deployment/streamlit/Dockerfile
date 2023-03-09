@@ -9,12 +9,12 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Use on azure
-# COPY deployment/streamlit .
-# Use for local
-COPY ./requirements.txt .
-
 RUN pip3 install -r requirements.txt
+
+# Use on azure
+COPY deployment/streamlit .
+# Use for local
+# COPY ./requirements.txt .
 
 EXPOSE 8501
 

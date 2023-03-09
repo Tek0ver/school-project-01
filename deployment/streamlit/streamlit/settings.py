@@ -1,4 +1,4 @@
-mode = 'local'
+mode = 'azure'
 # mode = 'azure'
 
 # postgres database
