@@ -1,7 +1,7 @@
 from os import environ
 
 # name of database
-database_name = "dev"
+database_name = "main"
 
 # azure sql conn string
 azure_conn_admin = f"host=vinci-db.postgres.database.azure.com port=5432 dbname=postgres user=postgres password={environ['POSTGRES_PASSWORD']} sslmode=require"
@@ -17,8 +17,8 @@ batch_size = 10
 headless = True
 
 # choose what you want update
-article = False
-content = True
+article = True
+content = False
 
 # export
 csv = False

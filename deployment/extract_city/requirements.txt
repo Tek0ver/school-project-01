@@ -1,0 +1,4 @@
+locationtagger
+spacy
+pandas
+psycopg2-binary
