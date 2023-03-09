@@ -1,0 +1,3 @@
+- webdriver.wait a la place du sleep
+- optimiser les requirements.txt
+- azure function
