@@ -141,14 +141,14 @@ def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
 
     # read the last 5 titles to define when to stop the current scrap
     if config.only_new_articles:
-        stop_title = last_title(conn)
+        stop_link = last_links(conn)
     else:
-        stop_title = ""
+        stop_link = ""
         
-    print(f"stop title: {stop_title}")
+    print(f"stop link: {stop_link}")
     for page in range(1, nb_page+1):
         print(f"page {page} is scraping...")
-        if scrap_page(page, stop_title, articles, url):
+        if scrap_page(page, stop_link, articles, url):
             print("stop reached")
             break
 
@@ -161,22 +161,22 @@ def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
     return df
 
 
-def last_title(conn):
+def last_links(conn):
     query = """
-        SELECT title
+        SELECT link
         FROM articles
         ORDER BY id DESC
         LIMIT 5
         ;
     """
 
-    stop_title = sql_select(conn, query)
-    stop_title = [x[0] for x in stop_title]
+    stop_link = sql_select(conn, query)
+    stop_link = [x[0] for x in stop_link]
 
-    return stop_title
+    return stop_link
 
 
-def scrap_page(page: int, stop_title, articles, url: str):
+def scrap_page(page: int, stop_link, articles, url: str):
     stop = False
     url = f"{url}&page={page}"
     driver.get(url)
@@ -189,7 +189,7 @@ def scrap_page(page: int, stop_title, articles, url: str):
             title_article = get_title(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a/h3')
             link_article = get_link(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a')
                             
-            if title_article.text in stop_title:
+            if link_article in stop_link:
                 # stop title reached, so break the while loop
                 # set stop = True to break the for loop too
                 print(f"{title_article.text} + {link_article} already scraped from last run")
