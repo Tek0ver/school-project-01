@@ -2,6 +2,8 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+COPY deployment/streamlit/requirements.txt .
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -11,10 +13,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install -r requirements.txt
 
-# Use on azure
 COPY deployment/streamlit .
-# Use for local
-# COPY ./requirements.txt .
 
 EXPOSE 8501
 
