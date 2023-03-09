@@ -8,7 +8,7 @@ class DatabaseInterface:
     def __init__(self):
         if settings.mode == 'local':
             self.conn = psycopg2.connect(**settings.database)
-        if settings.mode == 'azure':
+        elif settings.mode == 'azure':
             self.conn = psycopg2.connect(config.azure_conn_user)
 
         self.cursor = self.conn.cursor()

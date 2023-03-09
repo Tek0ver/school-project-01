@@ -4,6 +4,7 @@ import pandas as pd
 from toolbox import DatabaseInterface
 import matplotlib.pyplot as plt
 from datetime import datetime
+import seaborn as sns
 
 databaseInterface = DatabaseInterface()
 
@@ -20,6 +21,9 @@ def graph(data, date_range):
 
     st.pyplot(fig)
 
+def graph2(data, date_range):
+    # fig, ax = plt.
+    pass
 
 # conn = psycopg2.connect(**settings.database)
 #
