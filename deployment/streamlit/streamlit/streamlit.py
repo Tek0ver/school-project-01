@@ -25,26 +25,6 @@ def graph2(data, date_range):
     # fig, ax = plt.
     pass
 
-# conn = psycopg2.connect(**settings.database)
-#
-# cursor = conn.cursor()
-#
-# query = "SELECT * FROM articles;"
-#
-# cursor.execute(query)
-#
-# articles = cursor.fetchall()
-#
-# column_names = [desc[0] for desc in cursor.description]
-#
-# dataframe = pd.DataFrame(articles, columns=column_names)
-#
-# st.write(dataframe)
-#
-# conn.commit() # ?
-# conn.close()
-
-
 st.sidebar.header('Menu')
 sidebar_menu_00 = st.sidebar.selectbox('Analyse', ('Couverture médiatique', 'Heatmap des villes'))
 
