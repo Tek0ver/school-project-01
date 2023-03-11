@@ -33,3 +33,12 @@ WITH TEMPLATE sourcedb;
 -- didnt test but should work
 \copy (SELECT * FROM articles) TO '/home/tom/code/school-project-01/deployment/streamlit/streamlit/data-offline/articles.csv' DELIMITER ',' CSV HEADER;
 \copy (SELECT * FROM articles) to '/home/tom/code/school-project-01/deployment/streamlit/streamlit/data-offline/articles.csv' with csv
+
+
+-- date, city
+SELECT article_date, city
+FROM articles
+JOIN contents ON articles.id = contents.article_id
+JOIN content_cities ON contents.id = content_cities.content_id
+ORDER BY article_date
+;
