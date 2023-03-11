@@ -10,7 +10,6 @@ class DatabaseInterface:
         try:
             self.conn = psycopg2.connect(config.azure_conn_user)
             self.cursor = self.conn.cursor()
-            print(f"connected to azure database {config.database_name}")
         except:
             #TODO log to implement
             self.mode = 'local'
@@ -18,7 +17,6 @@ class DatabaseInterface:
             self.data = {
                 'articles': pd.read_csv('./data-offline/articles.csv')
                 }
-            print("connected to local csv")
 
     def select(self, query: str) -> pd.DataFrame:
         if self.mode == 'azure':

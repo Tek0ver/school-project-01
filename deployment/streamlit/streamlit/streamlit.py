@@ -5,6 +5,8 @@ from toolbox import DatabaseInterface
 import matplotlib.pyplot as plt
 from datetime import datetime
 import seaborn as sns
+from geopy.geocoders import Nominatim
+import plotly.express as px
 
 
 databaseInterface = DatabaseInterface()
@@ -43,12 +45,55 @@ def countplot(df: pd.DataFrame, feature: str, date_range):
     st.pyplot(fig)
 
 
+def bubblemap(df: pd.DataFrame):
+    """Data with latitude/longitude and values"""
+
+    fig, ax = plt.subplots()
+
+    fig = px.scatter_mapbox(
+        df,
+        lat="latitude",
+        lon="longitude",
+        size="count",
+        color="count",
+        hover_name="city",
+        zoom=3,
+        mapbox_style="open-street-map",
+        height=700,
+    )
+
+    st.pyplot(fig)
+
+
+def latitude(city: str):
+    # Initialize Nominatim API
+    geolocator = Nominatim(user_agent="MyApp")
+    location = geolocator.geocode(city)
+    try:
+        lat = location.latitude
+        return lat
+    except:
+        print(city)
+
+
+def longitude(city: str):
+    # Initialize Nominatim API
+    geolocator = Nominatim(user_agent="MyApp")
+    location = geolocator.geocode(city)
+    try:
+        lon = location.longitude
+        return lon
+    except:
+        print(city)
+
+
 ################################################# def variables #################################################
 
 # articles
 query = """
     SELECT * FROM articles
-    WHERE article_date > '2022-01-01';
+    WHERE article_date > '2022-01-01'
+    ;
 """
 articles = load_data(query)
 
@@ -64,6 +109,14 @@ query_city = """
 """
 df_city = load_data(query_city)
 df_city["city"] = df_city["city"].str.capitalize()
+
+query_geocity = """
+    SELECT city, count, latitude, longitude
+    FROM geocity
+    ;
+"""
+
+df_geocity = load_data(query_geocity)
 
 # date range
 date_min = min(articles["article_date"]).to_pydatetime()
@@ -91,13 +144,13 @@ if sidebar_menu_00 == "Couverture médiatique":
 
 
 elif sidebar_menu_00 == "Heatmap des villes":
-
+    # print dataframe
     st.header("Data")
     st.write(df_city)
+    st.write(df_geocity)
 
+    # print graph
     st.header("Graphique")
-
-    # TODO: Make sure that date goes at least to the first to the last article
     date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
-
     countplot(df_city, "city", date_range)
+    bubblemap(df_geocity)

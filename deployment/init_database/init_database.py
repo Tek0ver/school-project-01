@@ -69,6 +69,15 @@ def create_tables():
             );
             """,
             """
+            CREATE TABLE IF NOT EXISTS geocity (
+                id SERIAL PRIMARY KEY,
+                city VARCHAR (50),
+                count INTEGER,
+                latitude REAL,
+                longitude REAL
+            );
+            """,
+            """
             CREATE TABLE IF NOT EXISTS content_cities (
                 id SERIAL PRIMARY KEY,
                 content_id INTEGER NOT NULL,
