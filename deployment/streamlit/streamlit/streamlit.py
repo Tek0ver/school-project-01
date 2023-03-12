@@ -1,5 +1,4 @@
 import streamlit as st
-import psycopg2
 import pandas as pd
 from toolbox import DatabaseInterface
 import matplotlib.pyplot as plt
@@ -31,11 +30,8 @@ def graph(data, date_range):
     st.pyplot(fig)
 
 
-def countplot(df: pd.DataFrame, feature: str, date_range):
+def countplot(df: pd.DataFrame, feature: str):
     fig = plt.figure()
-    df = df[
-        (df["article_date"] >= date_range[0]) & (df["article_date"] <= date_range[1])
-    ]
     chart = sns.countplot(df, x=feature, order=df[feature].value_counts().index)
     chart.set_xticklabels(
         chart.get_xticklabels(), rotation=60, horizontalalignment="right"
@@ -47,22 +43,22 @@ def countplot(df: pd.DataFrame, feature: str, date_range):
 
 def bubblemap(df: pd.DataFrame):
     """Data with latitude/longitude and values"""
-
-    fig, ax = plt.subplots()
-
     fig = px.scatter_mapbox(
         df,
         lat="latitude",
         lon="longitude",
         size="count",
         color="count",
+        color_continuous_scale=px.colors.sequential.Plasma,
         hover_name="city",
-        zoom=3,
-        mapbox_style="open-street-map",
+        zoom=4,
+        center={"lat": 50, "lon": 30},
+        mapbox_style="carto-positron",
         height=700,
+        size_max=40
     )
 
-    st.pyplot(fig)
+    st.plotly_chart(fig)
 
 
 def latitude(city: str):
@@ -97,26 +93,6 @@ query = """
 """
 articles = load_data(query)
 
-# cities
-query_city = """
-    SELECT article_date, city
-    FROM articles
-    JOIN contents ON articles.id = contents.article_id
-    JOIN content_cities ON contents.id = content_cities.content_id
-    WHERE article_date > '2022-01-01'
-    ORDER BY article_date
-    ;
-"""
-df_city = load_data(query_city)
-df_city["city"] = df_city["city"].str.capitalize()
-
-query_geocity = """
-    SELECT city, count, latitude, longitude
-    FROM geocity
-    ;
-"""
-
-df_geocity = load_data(query_geocity)
 
 # date range
 date_min = min(articles["article_date"]).to_pydatetime()
@@ -146,11 +122,39 @@ if sidebar_menu_00 == "Couverture médiatique":
 elif sidebar_menu_00 == "Heatmap des villes":
     # print dataframe
     st.header("Data")
-    st.write(df_city)
-    st.write(df_geocity)
 
     # print graph
     st.header("Graphique")
     date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
-    countplot(df_city, "city", date_range)
-    bubblemap(df_geocity)
+
+    #########################################################
+
+    # cities
+    query_city = f"""
+        SELECT article_date, content_cities.city, latitude, longitude
+        FROM articles
+        JOIN contents ON articles.id = contents.article_id
+        JOIN content_cities ON contents.id = content_cities.content_id
+        JOIN geocity ON content_cities.city = geocity.city
+        WHERE '{date_range[0]}' < article_date AND article_date < '{date_range[1]}'
+        ORDER BY article_date
+        ;
+    """
+    df_city = load_data(query_city)
+    df_city["city"] = df_city["city"].str.capitalize()
+
+    df_mapcity = (
+        df_city.groupby(["city", "latitude", "longitude"])
+        .count()
+        .sort_values("article_date", ascending=False)
+        .reset_index()
+    )
+    df_mapcity = df_mapcity.rename(columns={"article_date": "count"})
+    df_mapcity = df_mapcity.dropna()
+
+    ##########################################################
+
+    bubblemap(df_mapcity)
+    countplot(df_city, "city")
+    st.write(df_mapcity)
+    st.write(df_city)

@@ -35,10 +35,12 @@ WITH TEMPLATE sourcedb;
 \copy (SELECT * FROM articles) to '/home/tom/code/school-project-01/deployment/streamlit/streamlit/data-offline/articles.csv' with csv
 
 
--- date, city
-SELECT article_date, city
+-- date, city, latitude, longitude
+SELECT article_date, content_cities.city, latitude, longitude
 FROM articles
 JOIN contents ON articles.id = contents.article_id
 JOIN content_cities ON contents.id = content_cities.content_id
+JOIN geocity ON content_cities.city = geocity.city
+WHERE '2022-01-01 06:44:00' < article_date AND article_date < '2024-01-01 06:44:00'
 ORDER BY article_date
 ;
