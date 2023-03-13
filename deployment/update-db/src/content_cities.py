@@ -21,6 +21,9 @@ nltk.download("averaged_perceptron_tagger")
 
 def main():
     conn = psycopg2.connect(config.azure_conn_user)
+
+
+# integrate IF statement for the WHERE
     query = """
         SELECT id, content
         FROM contents

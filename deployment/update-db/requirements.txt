@@ -3,4 +3,5 @@ psycopg2-binary
 geopy
 locationtagger
 spacy
-psycopg2-binary
+selenium
+webdriver-manager
