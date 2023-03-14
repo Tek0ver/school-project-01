@@ -4,7 +4,6 @@ from toolbox import DatabaseInterface
 import matplotlib.pyplot as plt
 from datetime import datetime
 import seaborn as sns
-from geopy.geocoders import Nominatim
 import plotly.express as px
 
 
@@ -61,27 +60,6 @@ def bubblemap(df: pd.DataFrame):
     st.plotly_chart(fig)
 
 
-def latitude(city: str):
-    # Initialize Nominatim API
-    geolocator = Nominatim(user_agent="MyApp")
-    location = geolocator.geocode(city)
-    try:
-        lat = location.latitude
-        return lat
-    except:
-        print(city)
-
-
-def longitude(city: str):
-    # Initialize Nominatim API
-    geolocator = Nominatim(user_agent="MyApp")
-    location = geolocator.geocode(city)
-    try:
-        lon = location.longitude
-        return lon
-    except:
-        print(city)
-
 
 ################################################# def variables #################################################
 
@@ -127,7 +105,7 @@ elif sidebar_menu_00 == "Heatmap des villes":
     st.header("Graphique")
     date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
 
-    #########################################################
+    ########################### update data ##############################
 
     # cities
     query_city = f"""

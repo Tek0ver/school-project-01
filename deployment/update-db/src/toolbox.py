@@ -1,6 +1,8 @@
+import config
+
 import psycopg2
 import pandas as pd
-import config
+from io import StringIO
 
 
 class DatabaseInterface:
@@ -24,9 +26,35 @@ class DatabaseInterface:
             data = self.cursor.fetchall()
             column_names = [desc[0] for desc in self.cursor.description]
             dataframe = pd.DataFrame(data, columns=column_names)
-            return dataframe
-        elif self.mode == 'local':
-            return self.data['articles']
 
-    def save_to_database(self):
-        pass
+            return dataframe
+        
+        elif self.mode == 'local':
+        
+            return self.data['articles']
+        
+
+    def export_to_database(self, df: pd.DataFrame, table: str):
+        """
+        export to postgresql table
+        """
+        # save dataframe to an in memory buffer
+        cols = tuple(df.columns)
+        buffer = StringIO()
+        # export
+        df.to_csv(buffer, header=False, index=False, sep=";")
+        buffer.seek(0)
+        cursor = self.conn.cursor()
+        cursor.copy_from(buffer, table, sep=";", columns=cols)
+        self.conn.commit()
+
+
+    def export_to_csv(self, df: pd.DataFrame, file_name: str, if_exists: str="replace"):
+        """
+        export df to csv
+        if_exists : {'replace', 'append'}, default 'replace'
+        """
+        if if_exists == "replace":
+            df.to_csv(f'{file_name}', index=False)
+        elif if_exists == "append":
+            df.to_csv(f'{file_name}', mode='a', index=False, header=False)

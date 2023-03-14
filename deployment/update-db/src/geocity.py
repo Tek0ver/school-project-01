@@ -2,9 +2,7 @@ from toolbox import DatabaseInterface
 import config
 
 import psycopg2
-import pandas as pd
 from geopy.geocoders import Nominatim
-from io import StringIO
 
 databaseInterface = DatabaseInterface()
 
@@ -12,7 +10,7 @@ databaseInterface = DatabaseInterface()
 def main():
     conn = psycopg2.connect(config.azure_conn_user)
 
-    query_city = """
+    query = """
         SELECT article_date, city
         FROM articles
         JOIN contents ON articles.id = contents.article_id
@@ -21,7 +19,11 @@ def main():
         ORDER BY article_date
         ;
     """
-    df_city = load_data(query_city)
+    df_city = databaseInterface.select(query)
+
+    cities = select_cities()
+    for city in cities:
+        df_city = df_city.drop(df_city[df_city["city"] == city].index)
     df_city["city"] = df_city["city"].str.capitalize()
 
     df_geocity = (
@@ -35,13 +37,24 @@ def main():
     df_geocity["longitude"] = df_geocity["city"].apply(longitude)
     df_geocity = df_geocity.dropna()
 
-    export_to_database(conn, df_geocity, table="geocity")
+    print(df_geocity)
+
+    databaseInterface.export_to_database(df_geocity, table="geocity")
+    print("geocity updated")
 
     conn.close()
 
 
-def load_data(query):
-    return databaseInterface.select(query)
+def select_cities():
+    query = """
+        SELECT city
+        FROM geocity
+        ;
+        """
+    
+    cities = databaseInterface.select(query)
+
+    return cities['city']
 
 
 def latitude(city: str):
@@ -65,20 +78,6 @@ def longitude(city: str):
     except:
         print(city)
 
-
-def export_to_database(conn, df: pd.DataFrame, table: str):
-    """
-    export to postgresql table
-    """
-    # save dataframe to an in memory buffer
-    cols = tuple(df.columns)
-    buffer = StringIO()
-    # export
-    df.to_csv(buffer, header=False, index=False, sep=";")
-    buffer.seek(0)
-    cursor = conn.cursor()
-    cursor.copy_from(buffer, table, sep=";", columns=cols)
-    conn.commit()
 
 
 if __name__ == "__main__":

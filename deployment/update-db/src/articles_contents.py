@@ -1,4 +1,5 @@
 import config
+from toolbox import DatabaseInterface
 
 # python
 import pandas as pd
@@ -8,7 +9,6 @@ from datetime import timedelta
 
 # sql
 import psycopg2
-from io import StringIO
 
 # selenium 4
 from selenium import webdriver
@@ -17,16 +17,20 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
 # init driver
 options = webdriver.ChromeOptions()
-options.add_argument('--no-sandbox')
+options.add_argument("--no-sandbox")
 options.add_argument("--disable-gpu")
 if config.headless:
     options.add_argument("--headless")
 driver = webdriver.Chrome(
     service=ChromeService(ChromeDriverManager().install()),
     options=options,
-    )
+)
+
+
+databaseInterface = DatabaseInterface()
 
 
 def main():
@@ -64,22 +68,27 @@ def update_database():
 def update_articles(conn):
     print("start to scrap articles")
     # create df
-    df_le_monde = scraping_journal(conn, journal_name="le monde", nb_page=config.nb_page, url="https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=01%2F01%2F2021&search_sort=dateCreated_desc")
+    df_le_monde = scraping_journal(
+        conn,
+        journal_name="le monde",
+        nb_page=config.nb_page,
+        url="https://www.lemonde.fr/recherche/?search_keywords=ukraine&start_at=01%2F01%2F2021&search_sort=dateCreated_desc",
+    )
     if len(df_le_monde) > 0:
         # convert date column to datetime format
         df_le_monde = convert_date(df_le_monde)
         # make sure df is in correct format
-        df_le_monde = df_le_monde.replace('\n','', regex=True)
-        df_le_monde = df_le_monde.replace(';','', regex=True)
+        df_le_monde = df_le_monde.replace("\n", "", regex=True)
+        df_le_monde = df_le_monde.replace(";", "", regex=True)
         if config.csv:
             # export to csv file
-            export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="append")
+            databaseInterface.export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="append")
         if config.database:
             # export to postgresql database
-            export_to_database(conn, df=df_le_monde, table="articles")
+            databaseInterface.export_to_database(df=df_le_monde, table="articles")
 
     print(f"{len(df_le_monde)} rows added to articles")
-    
+
 
 def update_contents(conn):
     scraping = True
@@ -91,14 +100,16 @@ def update_contents(conn):
             # create df
             df_content = scrap_content(links)
             # make sure df is in correct format
-            df_content = df_content.replace('\n','', regex=True)
-            df_content = df_content.replace(';','', regex=True)
+            df_content = df_content.replace("\n", "", regex=True)
+            df_content = df_content.replace(";", "", regex=True)
             if config.csv:
                 # export to csv file
-                export_to_csv(df=df_content, file_name="content.csv", if_exists="append")
+                databaseInterface.export_to_csv(
+                    df=df_content, file_name="content.csv", if_exists="append"
+                )
             if config.database:
                 # export to postgresql database
-                export_to_database(conn, df=df_content, table="contents")
+                databaseInterface.export_to_database(df=df_content, table="contents")
 
             print(f"{len(df_content)} rows added to contents")
         else:
@@ -107,23 +118,21 @@ def update_contents(conn):
     print("content scraped")
 
 
-
-
-
 ######################################################### scraping #########################################################
-
-
-
 
 
 def accept_cookies(url):
     # open web page
     driver.get(url)
-    WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button'))).click()
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable(
+            (By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button')
+        )
+    ).click()
     time.sleep(6)
 
 
-def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
+def scraping_journal(conn, journal_name: str, nb_page: int = 0, url: str = ""):
     """
     scrap website until the last article scraped last time \n
     nb_page : int, default 0 for all pages \n
@@ -133,7 +142,12 @@ def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
     # get the number of maximum pages for the scrap
     if nb_page == 0:
         driver.get(url)
-        last_page = int(driver.find_elements(by=By.XPATH, value='/html/body/main/article/section/section[1]/section[2]/section[4]/a[5]')[0].text)
+        last_page = int(
+            driver.find_elements(
+                by=By.XPATH,
+                value="/html/body/main/article/section/section[1]/section[2]/section[4]/a[5]",
+            )[0].text
+        )
         nb_page = last_page
 
     # create list of dict of title and date for each article about ukraine
@@ -144,9 +158,9 @@ def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
         stop_link = last_links(conn)
     else:
         stop_link = ""
-        
+
     print(f"stop link: {stop_link}")
-    for page in range(1, nb_page+1):
+    for page in range(1, nb_page + 1):
         print(f"page {page} is scraping...")
         if scrap_page(page, stop_link, articles, url):
             print("stop reached")
@@ -156,7 +170,6 @@ def scraping_journal(conn, journal_name: str, nb_page: int=0, url: str=""):
     df = pd.DataFrame.from_dict(articles)
     df.insert(0, "journal", journal_name)
     df = df[::-1].reset_index(drop=True)
-
 
     return df
 
@@ -186,13 +199,19 @@ def scrap_page(page: int, stop_link, articles, url: str):
     end = 0
     while end < 5:
         try:
-            title_article = get_title(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a/h3')
-            link_article = get_link(xpath=f'/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a')
-                            
+            title_article = get_title(
+                xpath=f"/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a/h3"
+            )
+            link_article = get_link(
+                xpath=f"/html/body/main/article/section/section[1]/section[2]/section[3]/section[{i}]/a"
+            )
+
             if link_article in stop_link:
                 # stop title reached, so break the while loop
                 # set stop = True to break the for loop too
-                print(f"{title_article.text} + {link_article} already scraped from last run")
+                print(
+                    f"{title_article.text} + {link_article} already scraped from last run"
+                )
                 stop = True
                 break
             else:
@@ -209,11 +228,13 @@ def scrap_page(page: int, stop_link, articles, url: str):
         # go to next article
         i += 1
 
-    dates = get_date(xpath='/html/body/main/article/section/section[1]/section[2]/section[3]/section/p/span[1]')
+    dates = get_date(
+        xpath="/html/body/main/article/section/section[1]/section[2]/section[3]/section/p/span[1]"
+    )
 
     # append scraped title, content and date to articles list of dict
     for title, date, link in zip(titles, dates, links):
-        articles.append({"title": title.text, "date": date.text, "link":link})
+        articles.append({"title": title.text, "date": date.text, "link": link})
 
     if stop:
         # stop title reached, so break the for loop
@@ -254,15 +275,17 @@ def get_content_link(conn, batch_size: int):
 def get_content(driver, link: str):
     # get content
     driver.get(link)
-    contents_desc = driver.find_elements(by=By.CSS_SELECTOR, value=".article__desc")                        
-    contents_paragraph = driver.find_elements(by=By.XPATH, value="/html/body/main/section[1]/section/section/article")
+    contents_desc = driver.find_elements(by=By.CSS_SELECTOR, value=".article__desc")
+    contents_paragraph = driver.find_elements(
+        by=By.XPATH, value="/html/body/main/section[1]/section/section/article"
+    )
     contents_live = driver.find_elements(by=By.XPATH, value='//*[@id="post-container"]')
     contents_post = driver.find_elements(by=By.XPATH, value='//*[@id="main"]/article')
     # concat the 2 list
     contents = contents_desc + contents_paragraph + contents_live + contents_post
     # transform selenium object to string
     contents = [content.text for content in contents]
-    content = ' '.join(contents)
+    content = " ".join(contents)
 
     return content
 
@@ -293,18 +316,12 @@ def get_date(xpath: str):
 
 
 def get_link(xpath: str):
-    link = driver.find_element(by=By.XPATH, value=xpath).get_attribute('href')
+    link = driver.find_element(by=By.XPATH, value=xpath).get_attribute("href")
 
     return link
 
 
-
-
-
 ######################################################### handling data #########################################################
-
-
-
 
 
 def convert_date(df: pd.DataFrame):
@@ -314,69 +331,45 @@ def convert_date(df: pd.DataFrame):
     df["date"] = df["date"].str.findall(r"[^Publié le ].+?(?=\d{2}h\d{2}).{5}").str[0]
     df["date"] = df["date"].str.replace("à ", "")
     today = date.today()
-    yesterday = today - timedelta(days = 1)
-    df["date"] = df["date"].str.replace("aujourd’hui", today.strftime('%d %m %Y'))
-    df["date"] = df["date"].str.replace("hier", yesterday.strftime('%d %m %Y'))
+    yesterday = today - timedelta(days=1)
+    df["date"] = df["date"].str.replace("aujourd’hui", today.strftime("%d %m %Y"))
+    df["date"] = df["date"].str.replace("hier", yesterday.strftime("%d %m %Y"))
     df["date"] = df["date"].str.replace("h", " ")
-    df[['day', 'month', 'year', 'hour', 'minute']] = df['date'].str.split(' ', expand=True)
+    df[["day", "month", "year", "hour", "minute"]] = df["date"].str.split(
+        " ", expand=True
+    )
 
     month_dict = {
-        'janvier': '01',
-        'février': '02',
-        'mars': '03',
-        'avril': '04',
-        'mai': '05',
-        'juin': '06',
-        'juillet': '07',
-        'août': '08',
-        'septembre': '09',
-        'octobre': '10',
-        'novembre': '11',
-        'décembre': '12'
-        }
+        "janvier": "01",
+        "février": "02",
+        "mars": "03",
+        "avril": "04",
+        "mai": "05",
+        "juin": "06",
+        "juillet": "07",
+        "août": "08",
+        "septembre": "09",
+        "octobre": "10",
+        "novembre": "11",
+        "décembre": "12",
+    }
 
-    df['month'] = df["month"].replace(month_dict)
-    df['date'] = df['year'] + '/' + df['month'] + '/' + df['day'] + ' ' + df["hour"] + ':' + df["minute"]
-    df['article_date'] = pd.to_datetime(df['date'])
-    df.drop(columns = ['day', 'month', 'year', 'hour', 'minute', 'date'], inplace=True)
+    df["month"] = df["month"].replace(month_dict)
+    df["date"] = (
+        df["year"]
+        + "/"
+        + df["month"]
+        + "/"
+        + df["day"]
+        + " "
+        + df["hour"]
+        + ":"
+        + df["minute"]
+    )
+    df["article_date"] = pd.to_datetime(df["date"])
+    df.drop(columns=["day", "month", "year", "hour", "minute", "date"], inplace=True)
 
     return df
-
-
-
-
-
-######################################################### export #########################################################
-
-
-
-
-
-def export_to_csv(df: pd.DataFrame, file_name: str, if_exists: str="replace"):
-    """
-    export df to csv
-    if_exists : {'replace', 'append'}, default 'replace'
-    """
-    if if_exists == "replace":
-        df.to_csv(f'{file_name}', index=False)
-    elif if_exists == "append":
-        df.to_csv(f'{file_name}', mode='a', index=False, header=False)
-
-
-def export_to_database(conn, df: pd.DataFrame, table: str):
-    """
-    export to postgresql table
-    """
-    # save dataframe to an in memory buffer
-    cols = tuple(df.columns)
-    buffer = StringIO()
-    # export
-    df.to_csv(buffer, header=False, index=False, sep=";")
-    buffer.seek(0)
-    cursor = conn.cursor()
-    cursor.copy_from(buffer, table, sep=";", columns=cols)
-    conn.commit()
-
 
 
 if __name__ == "__main__":
