@@ -1,12 +1,12 @@
 az login -u $AZURE_MAIL -p $AZURE_PASSWORD
 
-docker build -t update-db:1 --shm-size 1gb -f deployment/scraper/update-db/Dockerfile .
+docker build -t update-db:1 --shm-size 1gb -f deployment/update-db/Dockerfile .
 docker tag update-db:1 vincipubliccr.azurecr.io/update-db:1
 docker push vincipubliccr.azurecr.io/update-db:1
 
 az container create \
     --resource-group school-project-public-rg \
-    --name city \
+    --name update-db \
     --image vincipubliccr.azurecr.io/update-db:1 \
     --registry-username vincipubliccr \
     --registry-password $REGISTRY_PASSWORD \
