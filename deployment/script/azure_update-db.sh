@@ -1,13 +1,15 @@
+image_name=update-db
+
 az login -u $AZURE_MAIL -p $AZURE_PASSWORD
 
-docker build -t update-db:1 --shm-size 1gb -f deployment/update-db/Dockerfile .
-docker tag update-db:1 vincipubliccr.azurecr.io/update-db:1
-docker push vincipubliccr.azurecr.io/update-db:1
+docker build -t $image_name:1 --shm-size 1gb -f deployment/$image_name/Dockerfile .
+docker tag $image_name:1 vincipubliccr.azurecr.io/$image_name:1
+docker push vincipubliccr.azurecr.io/$image_name:1
 
 az container create \
     --resource-group school-project-public-rg \
-    --name update-db \
-    --image vincipubliccr.azurecr.io/update-db:1 \
+    --name $image_name \
+    --image vincipubliccr.azurecr.io/$image_name:1 \
     --registry-username vincipubliccr \
     --registry-password $REGISTRY_PASSWORD \
     --secure-environment-variables POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
@@ -20,5 +22,5 @@ az container create \
     # --azure-file-volume-mount-path /dev/shm/ \
 
 
-az container start --name update-db --resource-group school-project-public-rg
+az container start --name $image_name --resource-group school-project-public-rg
 echo database updated

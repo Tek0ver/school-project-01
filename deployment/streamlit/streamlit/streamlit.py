@@ -98,11 +98,6 @@ if sidebar_menu_00 == "Couverture médiatique":
 
 
 elif sidebar_menu_00 == "Heatmap des villes":
-    # print dataframe
-    st.header("Data")
-
-    # print graph
-    st.header("Graphique")
     date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
 
     ########################### update data ##############################
@@ -131,8 +126,12 @@ elif sidebar_menu_00 == "Heatmap des villes":
     df_mapcity = df_mapcity.dropna()
 
     ##########################################################
-
+    
+    # print graph
+    st.header("Graphique")
     bubblemap(df_mapcity)
     countplot(df_city, "city")
+    # print dataframe
+    st.header("Data")
     st.write(df_mapcity)
     st.write(df_city)
