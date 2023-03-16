@@ -23,4 +23,4 @@ az container create \
 
 
 az container start --name $image_name --resource-group school-project-public-rg
-echo database updated
+echo container "$image_name" updated

@@ -179,7 +179,6 @@ def last_links(conn):
         SELECT link
         FROM articles
         ORDER BY id DESC
-        LIMIT 5
         ;
     """
 
