@@ -159,7 +159,6 @@ def scraping_journal(conn, journal_name: str, nb_page: int = 0, url: str = ""):
     else:
         stop_link = ""
 
-    print(f"stop link: {stop_link}")
     for page in range(1, nb_page + 1):
         print(f"page {page} is scraping...")
         if scrap_page(page, stop_link, articles, url):
