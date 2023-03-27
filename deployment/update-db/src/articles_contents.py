@@ -44,12 +44,13 @@ def main():
 
 
 def update_database():
+    """scrap new articles and contents from 'le monde' and export it to database"""
     # connection to database
     conn = psycopg2.connect(config.azure_conn_user)
     print("connected")
 
     # cookies
-    accept_cookies("https://www.lemonde.fr")
+    accept_cookies(url="https://www.lemonde.fr", path='//*[@id="js-body"]/div[6]/div/footer/button')
 
     # update database
     if config.article:
@@ -66,6 +67,7 @@ def update_database():
 
 
 def update_articles(conn):
+    """scrap new articles title, date and link from 'le monde' and export it to database"""
     print("start to scrap articles")
     # create df
     df_le_monde = scraping_journal(
@@ -82,7 +84,9 @@ def update_articles(conn):
         df_le_monde = df_le_monde.replace(";", "", regex=True)
         if config.csv:
             # export to csv file
-            databaseInterface.export_to_csv(df=df_le_monde, file_name="articles.csv", if_exists="append")
+            databaseInterface.export_to_csv(
+                df=df_le_monde, file_name="articles.csv", if_exists="append"
+            )
         if config.database:
             # export to postgresql database
             databaseInterface.export_to_database(df=df_le_monde, table="articles")
@@ -91,6 +95,7 @@ def update_articles(conn):
 
 
 def update_contents(conn):
+    """scrap new contents of each new articles from 'le monde' and export it to database"""
     scraping = True
     while scraping:
         # get links of each articles
@@ -121,14 +126,17 @@ def update_contents(conn):
 ######################################################### scraping #########################################################
 
 
-def accept_cookies(url):
+def accept_cookies(url, path: str):
+    """accept cookies by clicking on XPATH button"""
     # open web page
     driver.get(url)
+    # click button
     WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable(
-            (By.XPATH, '//*[@id="js-body"]/div[6]/div/footer/button')
+            (By.XPATH, path)
         )
     ).click()
+    # wait for correct page loading
     time.sleep(6)
 
 
@@ -174,6 +182,7 @@ def scraping_journal(conn, journal_name: str, nb_page: int = 0, url: str = ""):
 
 
 def last_links(conn):
+    """get links of articles already in database for stop the scraping function when one of them reached"""
     query = """
         SELECT link
         FROM articles
@@ -181,13 +190,14 @@ def last_links(conn):
         ;
     """
 
-    stop_link = sql_select(conn, query)
+    stop_link = databaseInterface.sql_select(query)
     stop_link = [x[0] for x in stop_link]
 
     return stop_link
 
 
 def scrap_page(page: int, stop_link, articles, url: str):
+    """append scraped title, content and date to articles list of dict"""
     stop = False
     url = f"{url}&page={page}"
     driver.get(url)
@@ -239,19 +249,6 @@ def scrap_page(page: int, stop_link, articles, url: str):
         return True
 
 
-def sql_select(conn, query):
-    cursor = conn.cursor()
-    cursor.execute(query)
-
-    return cursor.fetchall()
-
-
-def sql_execute(conn, query):
-    cursor = conn.cursor()
-    cursor.execute(query)
-    conn.commit()
-
-
 def get_content_link(conn, batch_size: int):
     query = f"""
         SELECT id, link
@@ -265,7 +262,7 @@ def get_content_link(conn, batch_size: int):
         ;
     """
 
-    links = sql_select(conn, query)
+    links = databaseInterface.sql_select(query)
 
     return links
 
@@ -289,6 +286,7 @@ def get_content(driver, link: str):
 
 
 def scrap_content(links):
+    """scrap new contents of each new articles from 'le monde' and export it to database"""
     # open web page
     driver.get(links[0][1])
     contents = {}
