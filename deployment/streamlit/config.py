@@ -4,6 +4,8 @@ from os import environ
 database_name = "main"
 mode = 'azure'
 
+min_date = '2021-06-01' # minimum date for articles
+
 if mode == 'azure':
 
     # azure sql conn string
