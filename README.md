@@ -3,7 +3,7 @@
 ## Architecture
 
 - Scraper container will scrap 'le monde' and provide database host on Azure
-- (dont work yet) The scraper container is trigger every days by azure function
+- The scraper container is triggered everydays by azure function (dont work yet)
 - Streamlit use database to visualize data
 
 ![alt text](ressource/azure.jpg)
