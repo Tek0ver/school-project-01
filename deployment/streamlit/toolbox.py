@@ -46,12 +46,14 @@ class DatabaseInterface:
 
     def select(self, query: str) -> pd.DataFrame:
         if self.mode == 'azure':
+            print("[LOG] Loading data from azure")
             self.cursor.execute(queries[query])
             data = self.cursor.fetchall()
             column_names = [desc[0] for desc in self.cursor.description]
             dataframe = pd.DataFrame(data, columns=column_names)
             return dataframe
         elif self.mode == 'local':
+            print("[LOG] Loading data from local csv")
             if query == "query_articles":
                 return self.data['articles']
             elif query == "query_cities_from_articles":

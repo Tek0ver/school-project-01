@@ -7,11 +7,11 @@ import seaborn as sns
 import plotly.express as px
 import graphs
 
-databaseInterface = DatabaseInterface()
-
 
 ########################### load data ###########################
 
+
+databaseInterface = DatabaseInterface()
 
 @st.cache_data()
 def load_data():
