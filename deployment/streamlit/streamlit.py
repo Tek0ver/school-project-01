@@ -28,9 +28,10 @@ def load_data():
 
 data_articles, data_cities_from_articles, date_min, date_max = load_data()
 
+
 ########################### streamlit page ###########################
 
-
+print("[LOG] New page generation")
 st.sidebar.header("Menu")
 sidebar_menu_00 = st.sidebar.selectbox(
     "Analyse", ("Couverture médiatique", "Heatmap des villes")
