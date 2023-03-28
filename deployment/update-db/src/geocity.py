@@ -1,14 +1,12 @@
 from toolbox import DatabaseInterface
-import config
 
-import psycopg2
 from geopy.geocoders import Nominatim
 
 databaseInterface = DatabaseInterface()
 
 
 def main():
-    conn = psycopg2.connect(config.azure_conn_user)
+    """update table geo_city [[city, latitude, longitude, count]]"""
 
     query = """
         SELECT article_date, city
@@ -42,22 +40,22 @@ def main():
     databaseInterface.export_to_database(df_geocity, table="geocity")
     print("geocity updated")
 
-    conn.close()
-
 
 def select_cities():
+    """create dataframe [[city]]"""
     query = """
         SELECT city
         FROM geocity
         ;
         """
-    
+
     cities = databaseInterface.select(query)
 
-    return cities['city']
+    return cities["city"]
 
 
 def latitude(city: str):
+    """return city's latitude"""
     # Initialize Nominatim API
     geolocator = Nominatim(user_agent="MyApp")
     location = geolocator.geocode(city)
@@ -69,6 +67,7 @@ def latitude(city: str):
 
 
 def longitude(city: str):
+    """return city's longitude"""
     # Initialize Nominatim API
     geolocator = Nominatim(user_agent="MyApp")
     location = geolocator.geocode(city)
@@ -77,7 +76,6 @@ def longitude(city: str):
         return lon
     except:
         print(city)
-
 
 
 if __name__ == "__main__":

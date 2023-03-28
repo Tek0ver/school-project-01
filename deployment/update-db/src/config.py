@@ -20,7 +20,7 @@ headless = True
 article = True
 content = True
 
-# export
+# export mode
 csv = False
 database = True
 
