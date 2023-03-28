@@ -1,7 +1,26 @@
 # school-project-01
-School project at Sup De Vinvi Bordeaux
 
-## Azure
+## Architecture
+
+- Scraper container will scrap 'le monde' and provide database host on Azure
+- The scraper container is triggered everydays by azure function (dont work yet)
+- Streamlit use database to visualize data
+
 ![alt text](ressource/azure.jpg)
-### update images on azure
-Run the script in azure_script folder from SCHOOL-PROJECT-01 path.
+
+
+## init
+Run init-db.sh for initialize Azure database
+```
+bash script/init-db.sh
+```
+
+## update scraper container on azure
+Run script/azure_update-db.sh for update scraper container on Azure
+```
+bash script/azure_update-db.sh
+```
+
+## visualize
+Click [here](https://tek0ver-school-project-01-deploymentstreamlitstreamlit-1naka4.streamlit.app/?fbclid=IwAR1aP61VhQgQu1M-QXTI4P76xiRbzbfN8jz3OInhtaYcRv-jbrQf6IDf13w)
+to go to streamlit

@@ -1,10 +1,8 @@
-import config
 import ukraine_cities
 from toolbox import DatabaseInterface
 
 import pandas as pd
 
-import psycopg2
 import locationtagger
 import nltk
 
@@ -22,22 +20,19 @@ nltk.download("averaged_perceptron_tagger")
 
 
 def main():
-    conn = psycopg2.connect(config.azure_conn_user)
-
     # get the number of row in content_cities table for process only not exist row
-    count_content_cities = content_cities_count(conn)
+    count_content_cities = content_cities_count()
     # select contents
-    contents = select_contents(conn, count_content_cities)
+    contents = select_contents(count_content_cities)
     # create dataframe "content_id", "city"
     df = extract_cities(contents)
     # export to database
     databaseInterface.export_to_database(df, table="content_cities")
     print("content_cities updated")
 
-    conn.close()
 
-
-def select_contents(conn, count_content_cities: int):
+def select_contents(count_content_cities: int):
+    """select content from database"""
     if count_content_cities > 0:
         query = """
             SELECT id, content
@@ -57,14 +52,13 @@ def select_contents(conn, count_content_cities: int):
             ;
             """
 
-    cursor = conn.cursor()
-    cursor.execute(query)
-    contents = cursor.fetchall()
+    contents = databaseInterface.sql_select(query)
 
     return contents
 
 
 def extract_cities(contents):
+    """return df [[content_id, city]]"""
     df = pd.DataFrame(columns=["content_id", "city"])
 
     for content in contents:
@@ -79,29 +73,28 @@ def extract_cities(contents):
     return df
 
 
-def content_cities_count(conn):
+def content_cities_count():
     """return the number of rows in content_cities table"""
-
     query = """
         select count(*) from content_cities;
     """
-    cursor = conn.cursor()
-    cursor.execute(query)
-    count = cursor.fetchall()
+
+    count = databaseInterface.sql_select(query)
 
     return count[0][0]
 
 
 class Extract:
+    """extract cities or country from text"""
     def __init__(self, content):
         self.place_entity = locationtagger.find_locations(text=content)
 
     def country(self):
-        # getting all countries
+        # get all countries
         return [w for w in self.place_entity.countries]
 
     def cities(self):
-        # getting all cities
+        # get all cities
         return [w for w in self.place_entity.cities]
 
 
