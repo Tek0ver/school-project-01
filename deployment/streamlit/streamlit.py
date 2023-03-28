@@ -11,19 +11,18 @@ import graphs
 ########################### load data ###########################
 
 
-databaseInterface = DatabaseInterface()
-
 @st.cache_data()
 def load_data():
+    databaseInterface = DatabaseInterface()
     data_articles = databaseInterface.select("query_articles")
     data_cities_from_articles = databaseInterface.select("query_cities_from_articles")
 
     data_articles = data_articles[data_articles['article_date'] >= "2021-06-01"]
     data_cities_from_articles = data_cities_from_articles[data_cities_from_articles['article_date'] >= "2021-06-01"]
     # date range
-    print(type(min(data_articles["article_date"])))
     date_min = min(data_articles["article_date"]).to_pydatetime()
     date_max = max(data_articles["article_date"]).to_pydatetime()
+    print(f"[LOG] date min: {date_min}, date max: {date_max}")
 
     return data_articles, data_cities_from_articles, date_min, date_max
 
