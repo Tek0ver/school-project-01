@@ -1,10 +1,5 @@
 import streamlit as st
-import pandas as pd
 from toolbox import DatabaseInterface
-import matplotlib.pyplot as plt
-from datetime import datetime
-import seaborn as sns
-import plotly.express as px
 import graphs
 
 databaseInterface = DatabaseInterface()
