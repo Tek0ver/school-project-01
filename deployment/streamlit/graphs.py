@@ -47,6 +47,6 @@ def graph(data, date_range):
     if date_range[0] < date_start_war and date_start_war < date_range[1]:
         ax.axvline(x=date_start_war, color="red", linestyle="dashed")
         min_ylim, max_ylim = plt.ylim()
-        ax.text(x=date_start_war, y=max_ylim*0.9, s="Invasion of Ukraine by Russia", color="red")
+        ax.text(x=date_start_war, y=max_ylim*0.9, s=" Invasion de l'Ukraine par la Russie", color="red")
 
     st.pyplot(fig)
