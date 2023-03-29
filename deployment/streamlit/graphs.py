@@ -36,11 +36,17 @@ def bubblemap(df: pd.DataFrame):
     st.plotly_chart(fig)
 
 def graph(data, date_range):
+    date_start_war = datetime(year=2022, month=2, day=24)
     fig, ax = plt.subplots(1, 1)
     data = data[
         (data["article_date"] >= date_range[0])
         & (data["article_date"] <= date_range[1])
     ]
     ax.hist(data["article_date"], bins="auto")
+    ax.tick_params(axis='x', rotation=30)
+    if date_range[0] < date_start_war and date_start_war < date_range[1]:
+        ax.axvline(x=date_start_war, color="red", linestyle="dashed")
+        min_ylim, max_ylim = plt.ylim()
+        ax.text(x=date_start_war, y=max_ylim*0.9, s="Invasion of Ukraine by Russia", color="red")
 
     st.pyplot(fig)
