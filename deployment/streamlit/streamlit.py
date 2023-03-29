@@ -76,5 +76,5 @@ elif sidebar_menu_00 == "Heatmap des villes":
 
 elif sidebar_menu_00 == "Data":
     st.header("Data")
-    st.write(data_articles)
-    st.write(data_cities_from_articles)
+    st.dataframe(data_articles)
+    st.dataframe(data_cities_from_articles)
