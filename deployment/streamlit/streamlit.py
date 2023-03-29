@@ -1,41 +1,47 @@
 import streamlit as st
 from toolbox import DatabaseInterface
+from datetime import datetime
 import graphs
 
-databaseInterface = DatabaseInterface()
 
-
-########################### load data ###########################
+########################### load data and init streamlit ###########################
 
 
 @st.cache_data()
 def load_data():
+    databaseInterface = DatabaseInterface()
     data_articles = databaseInterface.select("query_articles")
     data_cities_from_articles = databaseInterface.select("query_cities_from_articles")
 
-    data_articles = data_articles[data_articles['article_date'] >= "2021-06-01"]
-    data_cities_from_articles = data_cities_from_articles[data_cities_from_articles['article_date'] >= "2021-06-01"]
     # date range
-    print(type(min(data_articles["article_date"])))
     date_min = min(data_articles["article_date"]).to_pydatetime()
     date_max = max(data_articles["article_date"]).to_pydatetime()
+    print(f"[LOG] date min: {date_min}, date max: {date_max}")
 
     return data_articles, data_cities_from_articles, date_min, date_max
 
 data_articles, data_cities_from_articles, date_min, date_max = load_data()
 
+# Initialization
+if 'session_count' not in st.session_state:
+    print("[LOG] New streamlit session")
+    st.session_state['session_count'] = 0
+
+
 ########################### streamlit page ###########################
 
 
+st.session_state['session_count'] += 1
+print(f"[LOG] New page generation ({st.session_state['session_count']})")
+
 st.sidebar.header("Menu")
 sidebar_menu_00 = st.sidebar.selectbox(
-    "Analyse", ("Couverture médiatique", "Heatmap des villes")
+    "Analyse", ("Couverture médiatique", "Heatmap des villes", "Data")
 )
 
 
 if sidebar_menu_00 == "Couverture médiatique":
 
-    # TODO: Make sure that date goes at least to the first to the last article
     date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
 
     st.header("Graphique")
@@ -44,6 +50,7 @@ if sidebar_menu_00 == "Couverture médiatique":
 
 
 elif sidebar_menu_00 == "Heatmap des villes":
+
     date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
 
     df_cities = data_cities_from_articles.copy()
@@ -65,7 +72,9 @@ elif sidebar_menu_00 == "Heatmap des villes":
     st.header("Graphique")
     graphs.bubblemap(df_mapcity)
     graphs.countplot(df_cities, "city")
-    # print dataframe
+
+
+elif sidebar_menu_00 == "Data":
     st.header("Data")
-    st.write(df_mapcity)
-    st.write(df_cities)
+    st.dataframe(data_articles)
+    st.dataframe(data_cities_from_articles)
