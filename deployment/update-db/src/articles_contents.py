@@ -99,7 +99,7 @@ def update_contents(conn):
     scraping = True
     while scraping:
         # get links of each articles
-        links = get_content_link(conn, batch_size=config.batch_size)
+        links = get_content_link(conn, batch_size=config.batch_size, journal='le monde')
         if len(links) > 0:
             print(f"start to scrap {len(links)} contents")
             # create df
@@ -249,14 +249,14 @@ def scrap_page(page: int, stop_link, articles, url: str):
         return True
 
 
-def get_content_link(conn, batch_size: int):
+def get_content_link(conn, batch_size: int, journal: str):
     query = f"""
         SELECT id, link
         FROM articles
         WHERE id NOT IN (
             SELECT article_id
             FROM contents
-            )
+            ) AND journal = '{journal}'
         ORDER BY id ASC
         LIMIT {batch_size}
         ;
