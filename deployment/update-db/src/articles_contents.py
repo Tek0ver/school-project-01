@@ -66,6 +66,11 @@ def update_database():
     conn.close()
 
 
+def scrap__articles():
+    """scrap articles from  , only title, date, then export it to database"""
+    pass
+
+
 def update_articles(conn):
     """scrap new articles title, date and link from 'le monde' and export it to database"""
     print("start to scrap articles")
@@ -99,7 +104,7 @@ def update_contents(conn):
     scraping = True
     while scraping:
         # get links of each articles
-        links = get_content_link(conn, batch_size=config.batch_size)
+        links = get_content_link(conn, batch_size=config.batch_size, journal='le monde')
         if len(links) > 0:
             print(f"start to scrap {len(links)} contents")
             # create df
@@ -121,6 +126,225 @@ def update_contents(conn):
             scraping = False
 
     print("content scraped")
+
+
+def scrap_articles_liberation(max_range=500, time_sleep=5, end_date="31/03/2023"):
+    """Scrap all titles and dates from Libération, articles start to end"""
+    
+    month_dict = {
+        "janvier": "01",
+        "février": "02",
+        "mars": "03",
+        "avril": "04",
+        "mai": "05",
+        "juin": "06",
+        "juillet": "07",
+        "août": "08",
+        "septembre": "09",
+        "octobre": "10",
+        "novembre": "11",
+        "décembre": "12",
+    }
+    
+    def close_popup() -> bool:
+        try:
+            print('Closing popup')
+            driver.switch_to.default_content()
+            time.sleep(10)
+            #print('step 0')
+            #iframe = driver.find_element(By.XPATH, '/html/body/iframe[3]')
+            print('Step 1')
+            driver.switch_to.frame(iframe)
+            iframe = driver.find_element(By.XPATH, '//*[@id="mailmunch-popover-frame-*"]')
+            print('Step 2')
+            driver.switch_to.frame(iframe)
+            driver.find_element(By.CSS_SELECTOR, 'html body.contacts.new div.step-container.live a#close-icon').click()
+            print('Step 3')
+            print("Popup closed")
+            driver.switch_to.default_content()
+            return True
+        except:
+            print("No popup")
+            return False
+       
+    def select_dates(start="01/02/2021", end="31/03/2023"):
+        time.sleep(2)
+        # CSS selectors for text boxes
+        start_box = "#datepicker_from"
+        end_box = "#datepicker_to"
+        submit_button = "#pubDate_filter > div:nth-child(7) > button:nth-child(3)"
+        
+        driver.find_element(By.CSS_SELECTOR, start_box).send_keys(start)
+        driver.find_element(By.CSS_SELECTOR, end_box).send_keys(end)
+        
+        # submit
+        driver.find_element(By.CSS_SELECTOR, submit_button).click()
+        
+        print(f"Dates submitted ({start} to {end})")
+        time.sleep(2)
+      
+    def select_sort(type_sort="Récent"):
+        """Put Récent or Pertinent"""
+        
+        from selenium.webdriver.support.ui import Select
+        
+        select = Select(driver.find_element(By.CSS_SELECTOR, '#sortby'))
+
+        # select by visible text
+        select.select_by_visible_text(type_sort)
+        
+        print(f"Sort articles with : {type_sort}")
+        time.sleep(2)
+    
+    def transform_dates(date):
+        if type(date) == pd._libs.tslibs.timestamps.Timestamp:
+            return date
+        else:
+            try:
+                date = date.split()
+                date = pd.to_datetime(" ".join([date[2], month_dict[date[1]], date[0]]))
+                return date
+            except:
+                return f"error date : {date}"
+    
+    def parse_one_page(time_sleep=5):
+        print('Parsing one page')
+        driver.set_window_size(1920,1080)
+        parsed = []
+        time.sleep(time_sleep)
+
+        for article in driver.find_elements(By.CSS_SELECTOR, "div.queryly_item_row"):
+
+            try:
+                parsed.append({
+                    'journal': 'liberation',
+                    'title': article.find_element(
+                        By.CLASS_NAME,
+                        'queryly_item_title').text,
+                    'article_date': article.find_element(
+                    By.CSS_SELECTOR,
+                    'div.queryly_item_description').find_element(By.CSS_SELECTOR, 'div').text.split(" / ")[0],
+                    'link': article.find_element(By.CSS_SELECTOR, 'a').get_attribute('href')
+                })
+            except:
+                print('FAILED PARSING PAGE')
+
+        print('Page end')
+        return parsed
+
+    
+    print("Start scraping Libération")
+    start_time = time.time()
+    
+    # define driver
+    driver = webdriver.Chrome()
+
+    # open web page
+    url = 'https://www.liberation.fr/recherche/?query=ukraine'
+    driver.get(url)
+
+    #change iframe for cookies button
+    time.sleep(5)
+    iframe = driver.find_element(By.XPATH, '//*[@id="sp_message_iframe_726760"]')
+    driver.switch_to.frame(iframe)
+    # accept cookies
+    driver.find_element(By.XPATH, '//*[@id="notice"]/div[3]/div/button[1]').click()
+    driver.switch_to.default_content()
+    print('Cookies accepted')
+
+    # close bottom bar
+    driver.set_window_size(1920,1080)
+    time.sleep(5)
+    iframe = driver.find_element(By.XPATH, '/html/body/div[1]/iframe')
+    driver.switch_to.frame(iframe)
+    driver.find_element(By.XPATH, '//*[@id="close-icon"]').click()
+    driver.switch_to.default_content()
+    print('Bottom bar closed')
+
+    # submit dates
+    select_dates(end=end_date)
+    
+    # sort articles
+    select_sort(type_sort="Récent")
+    
+    popup_closed = False
+    parsed = []
+
+    for i, page in enumerate(range(max_range)):
+        print(f"Scraping page {i+1}")
+
+        # parse one page
+        parsed = parsed + parse_one_page(time_sleep)
+
+        # go to next page
+        driver.set_window_size(1920,1080)
+        button_xpath_next = '/html/body/div[2]/section/div/div[2]/div/div[2]/div/div/div[2]/a'
+
+        try:
+            button_next = driver.find_element(By.XPATH, button_xpath_next)
+            button_next.click()
+        except:
+            if not popup_closed:
+                close_popup()
+                popup_closed = True
+            else:
+                print("End of scraping (no more page)")
+                break
+
+    print("End of scraping (end of loop)")
+    
+    # close driver
+    driver.quit()
+    
+    # convert data to dataframe
+    df = pd.DataFrame(parsed)
+
+    # transforme date
+    month_dict = {
+        "janvier": "01",
+        "février": "02",
+        "mars": "03",
+        "avril": "04",
+        "mai": "05",
+        "juin": "06",
+        "juillet": "07",
+        "août": "08",
+        "septembre": "09",
+        "octobre": "10",
+        "novembre": "11",
+        "décembre": "12",
+    }
+    
+    print(f"Time of scraping : {time.time() - start_time}")
+    print(f"Number of articles scraped : {df.shape[0]}")
+    
+    # check for missing data
+    print("Check for missing data...")
+    missing_data = df[(df['title'] == '') | (df['article_date'] == '') | (df['link'] == '')].shape[0]
+    if missing_data > 20:
+        print(f"{missing_data} rows with missing data, check for scraping errors.")
+    else:
+        df = df[~(df['title'] == '') & ~(df['article_date'] == '') & ~(df['link'] == '')]
+        print(f"{df.shape[0]} rows of data scraped")
+
+        # convert dates to Pandas Timestamp
+        df['article_date'] = df['article_date'].apply(transform_dates)
+        
+    def cut_link(link: str, lenght=255):
+        if len(link) > lenght:
+            return link[:lenght]
+        else:
+            return link
+
+    #cut links too long
+    print(f"{df[df['link'].str.len() > 255].shape[0]} links are too long, these will be cuted")
+    df['link'] = df['link'].apply(cut_link)
+    
+    # export to postgresql database
+    databaseInterface = DatabaseInterface()
+    databaseInterface.export_to_database(df=df, table="articles")
+    
+    return df
 
 
 ######################################################### scraping #########################################################
@@ -249,14 +473,14 @@ def scrap_page(page: int, stop_link, articles, url: str):
         return True
 
 
-def get_content_link(conn, batch_size: int):
+def get_content_link(conn, batch_size: int, journal: str):
     query = f"""
         SELECT id, link
         FROM articles
         WHERE id NOT IN (
             SELECT article_id
             FROM contents
-            )
+            ) AND journal = '{journal}'
         ORDER BY id ASC
         LIMIT {batch_size}
         ;
