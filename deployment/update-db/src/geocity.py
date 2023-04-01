@@ -22,8 +22,8 @@ def main():
 
     cities = select_cities()
     # drop city that already in geocity table for avoid over calculation
-    # for city in cities:
-    #     df_city = df_city.drop(df_city[df_city["city"] == city].index)
+    for city in cities:
+        df_city = df_city.drop(df_city[df_city["city"] == city].index)
     df_city["city"] = df_city["city"].str.capitalize()
 
     df_geocity = (
@@ -37,8 +37,6 @@ def main():
     df_geocity["longitude"] = df_geocity["city"].apply(longitude)
     df_geocity["population_2023"] = df_geocity["city"].apply(population)
     df_geocity = df_geocity.dropna()
-
-    print(df_geocity)
 
     databaseInterface.export_to_database(df_geocity, table="geocity")
     print("geocity updated")
