@@ -26,9 +26,10 @@ WITH TEMPLATE sourcedb;
 
 
 -- export table to csv
-\copy articles TO '/home/tom/code/school-project-01/deployment/streamlit/streamlit/data-offline/articles.csv' DELIMITER ',' CSV HEADER;
-\copy contents TO '/home/tom/code/school-project-01/deployment/streamlit/streamlit/data-offline/contents.csv' DELIMITER ',' CSV HEADER;
-\copy content_cities TO '/home/tom/code/school-project-01/deployment/streamlit/streamlit/data-offline/content_cities.csv' DELIMITER ',' CSV HEADER;
+\copy articles TO '/home/tom/code/school-project-01/deployment/streamlit/data-offline/articles.csv' DELIMITER ',' CSV HEADER;
+\copy contents TO '/home/tom/code/school-project-01/deployment/streamlit/data-offline/contents.csv' DELIMITER ',' CSV HEADER;
+\copy content_cities TO '/home/tom/code/school-project-01/deployment/streamlit/data-offline/content_cities.csv' DELIMITER ',' CSV HEADER;
+\copy geocity TO '/home/tom/code/school-project-01/deployment/streamlit/data-offline/geocity.csv' DELIMITER ',' CSV HEADER;
 
 -- didnt test but should work
 \copy (SELECT * FROM articles) TO '/home/tom/code/school-project-01/deployment/streamlit/streamlit/data-offline/articles.csv' DELIMITER ',' CSV HEADER;

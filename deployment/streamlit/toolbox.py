@@ -80,5 +80,5 @@ class DatabaseInterface:
                     how='inner'
                 )
 
-                df = df[['article_date', 'city', 'latitude', 'longitude']]
+                df = df[['article_date', 'city', 'population_2023', 'latitude', 'longitude']]
                 return df
