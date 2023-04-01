@@ -5,3 +5,4 @@ locationtagger
 spacy
 selenium
 webdriver-manager
+qwikidata

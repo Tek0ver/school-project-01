@@ -60,7 +60,7 @@ elif sidebar_menu_00 == "Heatmap des villes":
     df_cities["city"] = df_cities["city"].str.capitalize()
 
     df_mapcity = (
-        df_cities.groupby(["city", "latitude", "longitude"])
+        df_cities.groupby(["city", "population_2023", "latitude", "longitude"])
         .count()
         .sort_values("article_date", ascending=False)
         .reset_index()
