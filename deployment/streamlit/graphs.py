@@ -57,7 +57,8 @@ def graph(data, date_range, journals=['Le Monde', 'Libération']):
         & (data["journal"].isin(journal_filter))
     ]
 
-    ax = sns.displot(data, x='article_date', hue='journal', kde=True)
+    ax = sns.displot(data, x='article_date', hue='journal', kde=True,
+                     edgecolor='white')
     ax.tick_params(axis='x', rotation=40)
 
     sns.move_legend(
