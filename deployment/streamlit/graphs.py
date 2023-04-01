@@ -44,9 +44,11 @@ def graph(data, date_range, journals=['Le Monde', 'Libération']):
 
     convert_labels = {
         'Le Monde': 'le monde',
-        'Libération': 'liberation'
+        'Libération': 'liberation',
+        'le monde': 'Le Monde',
+        'liberation': 'Libération'
     }
-    journal_filter = [convert_labels[label] for label in journals]
+    journal_filter = [convert_labels[journal] for journal in journals]
 
     data = data[
         (data["article_date"] >= date_range[0])
@@ -63,7 +65,7 @@ def graph(data, date_range, journals=['Le Monde', 'Libération']):
     )
 
     for i, label in enumerate(ax._legend.texts):
-        label.set_text(journals[i])
+        label.set_text(convert_labels[label.get_text()])
 
     if date_range[0] < date_start_war and date_start_war < date_range[1]:
         plt.axvline(x=date_start_war, color="red", linestyle="dashed")
