@@ -548,6 +548,8 @@ def convert_date(df: pd.DataFrame):
     """
     convert string date column to datetime format
     """
+    df["date"] = df["date"].str.replace(",", " 00h00")
+    df["date"] = df["date"] + " 00h00"
     df["date"] = df["date"].str.findall(r"[^Publié le ].+?(?=\d{2}h\d{2}).{5}").str[0]
     df["date"] = df["date"].str.replace("à ", "")
     today = date.today()
