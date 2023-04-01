@@ -64,6 +64,8 @@ def graph(data, date_range, journals=['Le Monde', 'Libération']):
         bbox_to_anchor=(.5, 1), ncol=3, title=None, frameon=False,
     )
 
+    ax.set(xlabel='', ylabel='Nombre d\'articles parus')
+
     for i, label in enumerate(ax._legend.texts):
         label.set_text(convert_labels[label.get_text()])
 
