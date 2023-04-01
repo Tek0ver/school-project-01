@@ -44,8 +44,9 @@ if sidebar_menu_00 == "Couverture médiatique":
 
     date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
 
-    st.header("Graphique")
-
+    st.header("COUVRTURE MÉDIATIQUE")
+    st.write("Ce graphique présente le couverture médiatique depuis 2021 jusqu'au debut 2023")
+    
     journal_filter = st.multiselect(
         'Journal',
         ['Le Monde', 'Libération'],
@@ -53,9 +54,9 @@ if sidebar_menu_00 == "Couverture médiatique":
 
     if journal_filter:
         graphs.graph(data_articles, date_range, journal_filter)
+        st.write(" On peut constater que pendant le début de la guerre, les articles du journal le monde qui parle du Ukraine on augmenter")
     else:
         st.write("Sélectionnez au moins un journal dans la liste.")
-
 
 elif sidebar_menu_00 == "Heatmap des villes":
 
@@ -77,9 +78,12 @@ elif sidebar_menu_00 == "Heatmap des villes":
     df_mapcity = df_mapcity.dropna()
 
     # print graph
-    st.header("Graphique")
+    st.header("HEATMAP DES VILLES")
     graphs.bubblemap(df_mapcity)
+    st.write("")
+    st.header("Les nombres d'articles parlant sur une ville")
     graphs.countplot(df_cities, "city")
+    
 
 
 elif sidebar_menu_00 == "Data":
