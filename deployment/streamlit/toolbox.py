@@ -4,14 +4,14 @@ import config
 
 queries = {
     "query_articles":
-        """
+        f"""
         SELECT * FROM articles
-        WHERE article_date > '2022-01-01'
+        WHERE article_date > '{config.min_date}'
         ;
         """,
     "query_cities_from_articles":
         """
-        SELECT article_date, content_cities.city, latitude, longitude
+        SELECT article_date, content_cities.city, population_2023, latitude, longitude
         FROM articles
         JOIN contents ON articles.id = contents.article_id
         JOIN content_cities ON contents.id = content_cities.content_id
@@ -55,7 +55,8 @@ class DatabaseInterface:
         elif self.mode == 'local':
             print("[LOG] Loading data from local csv")
             if query == "query_articles":
-                return self.data['articles']
+                df = self.data['articles'][self.data['articles']['article_date'] >= config.min_date]
+                return df
             elif query == "query_cities_from_articles":
                 df = pd.merge(
                     self.data['articles'],
@@ -79,5 +80,5 @@ class DatabaseInterface:
                     how='inner'
                 )
 
-                df = df[['article_date', 'city', 'latitude', 'longitude']]
+                df = df[['article_date', 'city', 'population_2023', 'latitude', 'longitude']]
                 return df
