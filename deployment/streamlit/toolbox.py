@@ -11,7 +11,7 @@ queries = {
         """,
     "query_cities_from_articles":
         """
-        SELECT article_date, content_cities.city, latitude, longitude
+        SELECT article_date, content_cities.city, population_2023, latitude, longitude
         FROM articles
         JOIN contents ON articles.id = contents.article_id
         JOIN content_cities ON contents.id = content_cities.content_id
