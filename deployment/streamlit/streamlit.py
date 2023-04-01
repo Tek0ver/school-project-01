@@ -31,6 +31,14 @@ if 'session_count' not in st.session_state:
 ########################### streamlit page ###########################
 
 
+def date_slider():
+    range_date = st.slider("Range de date voulu ?", value=(date_min, date_max))
+    if range_date[0] == range_date[1]:
+        st.warning("Veuillez séléctionner deux dates différentes.")
+        st.stop()
+    return range_date
+
+
 st.session_state['session_count'] += 1
 print(f"[LOG] New page generation ({st.session_state['session_count']})")
 
@@ -39,10 +47,9 @@ sidebar_menu_00 = st.sidebar.selectbox(
     "Analyse", ("Couverture médiatique", "Heatmap des villes", "Data")
 )
 
-
 if sidebar_menu_00 == "Couverture médiatique":
 
-    date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
+    date_range = date_slider()
 
     st.header("Graphique")
 
@@ -54,12 +61,12 @@ if sidebar_menu_00 == "Couverture médiatique":
     if journal_filter:
         graphs.graph(data_articles, date_range, journal_filter)
     else:
-        st.write("Sélectionnez au moins un journal dans la liste.")
+        st.warning("Sélectionnez au moins un journal dans la liste.")
 
 
 elif sidebar_menu_00 == "Heatmap des villes":
 
-    date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
+    date_range = date_slider()
 
     df_cities = data_cities_from_articles.copy()
     df_cities = df_cities[
