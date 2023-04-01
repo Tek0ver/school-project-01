@@ -46,10 +46,17 @@ if sidebar_menu_00 == "Couverture médiatique":
 
     st.header("COUVRTURE MÉDIATIQUE")
     st.write("Ce graphique présente le couverture médiatique depuis 2021 jusqu'au debut 2023")
+    
+    journal_filter = st.multiselect(
+        'Journal',
+        ['Le Monde', 'Libération'],
+        ['Le Monde', 'Libération'])
 
-    graphs.graph(data_articles, date_range)
-    st.write(" On peut constater que pendant le début de la guerre, les articles du journal le monde qui parle du Ukraine on augmenter")
-
+    if journal_filter:
+        graphs.graph(data_articles, date_range, journal_filter)
+        st.write(" On peut constater que pendant le début de la guerre, les articles du journal le monde qui parle du Ukraine on augmenter")
+    else:
+        st.write("Sélectionnez au moins un journal dans la liste.")
 
 elif sidebar_menu_00 == "Heatmap des villes":
 
@@ -62,7 +69,7 @@ elif sidebar_menu_00 == "Heatmap des villes":
     df_cities["city"] = df_cities["city"].str.capitalize()
 
     df_mapcity = (
-        df_cities.groupby(["city", "latitude", "longitude"])
+        df_cities.groupby(["city", "population_2023", "latitude", "longitude"])
         .count()
         .sort_values("article_date", ascending=False)
         .reset_index()
