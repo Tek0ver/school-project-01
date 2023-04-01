@@ -38,24 +38,36 @@ def bubblemap(df: pd.DataFrame):
 
     st.plotly_chart(fig)
 
+def graph(data, date_range, journals=['Le Monde', 'Libération']):
 
-def graph(data, date_range):
     date_start_war = datetime(year=2022, month=2, day=24)
-    fig, ax = plt.subplots(1, 1)
+
+    convert_labels = {
+        'Le Monde': 'le monde',
+        'Libération': 'liberation'
+    }
+    journal_filter = [convert_labels[label] for label in journals]
+
     data = data[
         (data["article_date"] >= date_range[0])
         & (data["article_date"] <= date_range[1])
+        & (data["journal"].isin(journal_filter))
     ]
-    ax.hist(data["article_date"], bins="auto")
-    ax.tick_params(axis="x", rotation=30)
-    if date_range[0] < date_start_war and date_start_war < date_range[1]:
-        ax.axvline(x=date_start_war, color="red", linestyle="dashed")
-        min_ylim, max_ylim = plt.ylim()
-        ax.text(
-            x=date_start_war,
-            y=max_ylim * 0.9,
-            s=" Invasion de l'Ukraine par la Russie",
-            color="red",
-        )
+    
+    ax = sns.displot(data, x='article_date', hue='journal', kde=True)
+    ax.tick_params(axis='x', rotation=40)
 
-    st.pyplot(fig)
+    sns.move_legend(
+        ax, "lower center",
+        bbox_to_anchor=(.5, 1), ncol=3, title=None, frameon=False,
+    )
+
+    for i, label in enumerate(ax._legend.texts):
+        label.set_text(journals[i])
+
+    if date_range[0] < date_start_war and date_start_war < date_range[1]:
+        plt.axvline(x=date_start_war, color="red", linestyle="dashed")
+        min_ylim, max_ylim = plt.ylim()
+        plt.text(x=date_start_war, y=max_ylim*0.9, s=" Invasion de l'Ukraine par la Russie", color="red")
+
+    st.pyplot(ax)
