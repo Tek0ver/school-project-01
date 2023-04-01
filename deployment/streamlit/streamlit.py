@@ -46,7 +46,15 @@ if sidebar_menu_00 == "Couverture médiatique":
 
     st.header("Graphique")
 
-    graphs.graph(data_articles, date_range)
+    journal_filter = st.multiselect(
+        'Journal',
+        ['Le Monde', 'Libération'],
+        ['Le Monde', 'Libération'])
+
+    if journal_filter:
+        graphs.graph(data_articles, date_range, journal_filter)
+    else:
+        st.write("Sélectionnez au moins un journal dans la liste.")
 
 
 elif sidebar_menu_00 == "Heatmap des villes":
