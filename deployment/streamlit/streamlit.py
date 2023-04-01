@@ -61,8 +61,10 @@ if sidebar_menu_00 == "Couverture médiatique":
 
     # check for at least one journal selected
     if journal_filter:
-        graphs.graph(data_articles, date_range, journal_filter)
-        st.write(" On peut constater qu'avec le début de la guerre, le nombre d'articles sur l'Ukraine a fortement augmenté.")
+        import time
+        with st.spinner('Chargement'):
+            graphs.graph(data_articles, date_range, journal_filter)
+            st.write(" On peut constater qu'avec le début de la guerre, le nombre d'articles sur l'Ukraine a fortement augmenté.")
     else:
         st.warning("Sélectionnez au moins un journal dans la liste.")
 
