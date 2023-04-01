@@ -61,8 +61,9 @@ if sidebar_menu_00 == "Couverture médiatique":
 
     # check for at least one journal selected
     if journal_filter:
-        graphs.graph(data_articles, date_range, journal_filter)
-        st.write(" On peut constater qu'avec le début de la guerre, le nombre d'articles sur l'Ukraine a fortement augmenté.")
+        with st.spinner('Chargement'):
+            graphs.graph(data_articles, date_range, journal_filter)
+            st.write(" On peut constater qu'avec le début de la guerre, le nombre d'articles sur l'Ukraine a fortement augmenté.")
     else:
         st.warning("Sélectionnez au moins un journal dans la liste.")
 
@@ -90,12 +91,13 @@ elif sidebar_menu_00 == "Données géographiques":
     df_mapcity = df_mapcity.rename(columns={"article_date": "count"})
     df_mapcity = df_mapcity.dropna()
 
-    # print graphs
-    st.header("Cartes des villes mentionnées dans les articles")
-    graphs.bubblemap(df_mapcity)
-    st.write("")
-    st.header("Nombre de mentions des villes dans les articles")
-    graphs.countplot(df_cities, "city")
+    with st.spinner('Chargement'):
+        # print graphs
+        st.header("Cartes des villes mentionnées dans les articles")
+        graphs.bubblemap(df_mapcity)
+        st.write("")
+        st.header("Nombre de mentions des villes dans les articles")
+        graphs.countplot(df_cities, "city")
 
 elif sidebar_menu_00 == "Data":
     st.title("Data")
