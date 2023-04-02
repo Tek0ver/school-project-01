@@ -31,36 +31,50 @@ if 'session_count' not in st.session_state:
 ########################### streamlit page ###########################
 
 
+def date_slider():
+    range_date = st.slider("Séléctionnez une plage de date :", value=(date_min, date_max))
+    if range_date[0] == range_date[1]:
+        st.warning("Veuillez séléctionner deux dates différentes.")
+        st.stop()
+    return range_date
+
+
 st.session_state['session_count'] += 1
 print(f"[LOG] New page generation ({st.session_state['session_count']})")
 
 st.sidebar.header("Menu")
 sidebar_menu_00 = st.sidebar.selectbox(
-    "Analyse", ("Couverture médiatique", "Heatmap des villes", "Data")
+    "Analyse", ("Couverture médiatique", "Données géographiques", "Data")
 )
-
 
 if sidebar_menu_00 == "Couverture médiatique":
 
-    date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
-
-    st.header("COUVRTURE MÉDIATIQUE")
-    st.write("Ce graphique présente le couverture médiatique depuis 2021 jusqu'au debut 2023")
+    st.title("COUVERTURE MÉDIATIQUE")
+    st.write("Vous trouverez ici le graphique de la couverture médiatique sur l'Ukraine de mi 2021 à mi 2023 \
+             en terme de nombre d'articles parus sur différents sites d'actualité français.")
     
+    date_range = date_slider()
     journal_filter = st.multiselect(
-        'Journal',
+        'Séléctionnez le ou les journaux :',
         ['Le Monde', 'Libération'],
         ['Le Monde', 'Libération'])
 
+    # check for at least one journal selected
     if journal_filter:
-        graphs.graph(data_articles, date_range, journal_filter)
-        st.write(" On peut constater que pendant le début de la guerre, les articles du journal le monde qui parle du Ukraine on augmenter")
+        with st.spinner('Chargement'):
+            graphs.graph(data_articles, date_range, journal_filter)
+            st.write(" On peut constater qu'avec le début de la guerre, le nombre d'articles sur l'Ukraine a fortement augmenté.")
     else:
-        st.write("Sélectionnez au moins un journal dans la liste.")
+        st.warning("Sélectionnez au moins un journal dans la liste.")
 
-elif sidebar_menu_00 == "Heatmap des villes":
+elif sidebar_menu_00 == "Données géographiques":
 
-    date_range = st.slider("Range de date voulu ?", value=(date_min, date_max))
+    st.title("DONNÉES GÉOGRAPHIQUES")
+    st.write("Vous trouverez ici les villes mentionnées dans les articles parus dans la plage \
+             de date séléctionnée au travers de deux graphiques.")
+    st.info("Dans cette version, seulement les articles de Le Monde sont utilisés.", icon="⚠️")
+
+    date_range = date_slider()
 
     df_cities = data_cities_from_articles.copy()
     df_cities = df_cities[
@@ -77,16 +91,28 @@ elif sidebar_menu_00 == "Heatmap des villes":
     df_mapcity = df_mapcity.rename(columns={"article_date": "count"})
     df_mapcity = df_mapcity.dropna()
 
-    # print graph
-    st.header("HEATMAP DES VILLES")
-    graphs.bubblemap(df_mapcity)
-    st.write("")
-    st.header("Les nombres d'articles parlant sur une ville")
-    graphs.countplot(df_cities, "city")
-    
-
+    with st.spinner('Chargement'):
+        # print graphs
+        st.header("Cartes des villes mentionnées dans les articles")
+        graphs.bubblemap(df_mapcity)
+        st.write("")
+        st.header("Nombre de mentions des villes dans les articles")
+        graphs.countplot(df_cities, "city")
 
 elif sidebar_menu_00 == "Data":
-    st.header("Data")
-    st.dataframe(data_articles)
+    st.title("Data")
+    st.write("Vous pouvez voir ici un extrait des donneés utilisées pour générer les différentes visualisations sur ce site. \
+             Ces données ont été récupérées par notre équipe à l'aide de scraping.")
+    st.write("Quelques chiffres :")
+    nb_articles = data_articles.shape[0]
+    min_date = data_articles['article_date'].min()
+    max_date = data_articles['article_date'].max()
+    delta_date = max_date - min_date
+    min_date = min_date.strftime('%d/%m/%Y')
+    max_date = max_date.strftime('%d/%m/%Y')
+    st.write(f"Il y a actuellement {nb_articles} articles provenants de Le Monde et de Libération \
+             parus entre le {min_date} et le {max_date}, soit sur une période de {delta_date.days} jours.")
+    st.header("Articles :")
+    st.dataframe(data_articles[['journal', 'article_date', 'title']])
+    st.header("Informations des villes :")
     st.dataframe(data_cities_from_articles)

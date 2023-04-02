@@ -9,6 +9,7 @@ import plotly.express as px
 
 def countplot(df: pd.DataFrame, feature: str):
     fig = plt.figure()
+    print(df.shape)
     chart = sns.countplot(df, x=feature, order=df[feature].value_counts().index)
     chart.set_xticklabels(
         chart.get_xticklabels(), rotation=60, horizontalalignment="right"
@@ -55,8 +56,9 @@ def graph(data, date_range, journals=['Le Monde', 'Libération']):
         & (data["article_date"] <= date_range[1])
         & (data["journal"].isin(journal_filter))
     ]
-    
-    ax = sns.displot(data, x='article_date', hue='journal', kde=True)
+
+    ax = sns.displot(data, x='article_date', hue='journal', kde=True,
+                     edgecolor='white')
     ax.tick_params(axis='x', rotation=40)
 
     sns.move_legend(
@@ -72,6 +74,10 @@ def graph(data, date_range, journals=['Le Monde', 'Libération']):
     if date_range[0] < date_start_war and date_start_war < date_range[1]:
         plt.axvline(x=date_start_war, color="red", linestyle="dashed")
         min_ylim, max_ylim = plt.ylim()
-        plt.text(x=date_start_war, y=max_ylim*0.9, s=" Invasion de l'Ukraine par la Russie", color="red")
+        plt.text(x=plt.xlim()[0],
+                 y=max_ylim*0.9,
+                 s=" Invasion de l'Ukraine par la Russie",
+                 color="red",
+                 in_layout=False)
 
     st.pyplot(ax)
