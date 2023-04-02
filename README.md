@@ -23,5 +23,5 @@ bash deployment/script/azure_update-db.sh
 ```
 
 ## visualize
-Click [here](https://tek0ver-school-project-01-deploymentstreamlitstreamlit-1naka4.streamlit.app/?fbclid=IwAR1aP61VhQgQu1M-QXTI4P76xiRbzbfN8jz3OInhtaYcRv-jbrQf6IDf13w)
+Click [here](https://projet-m1.streamlit.app/)
 to go to streamlit
