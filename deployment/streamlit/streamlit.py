@@ -7,7 +7,7 @@ import graphs
 ########################### load data and init streamlit ###########################
 
 
-@st.cache_data()
+@st.cache_data(ttl=86400)
 def load_data():
     databaseInterface = DatabaseInterface()
     data_articles = databaseInterface.select("query_articles")

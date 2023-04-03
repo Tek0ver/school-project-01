@@ -3,7 +3,7 @@
 ## Architecture
 
 - Scraper container will scrap 'le monde' and provide database host on Azure
-- The scraper container is triggered everydays by azure function (dont work yet)
+- The scraper container is triggered everydays by azure function
 - Streamlit app take data from database to visualize data
 - Degraded mode: if database is out, data are automatically provide by csv for continuous visualisation
 
