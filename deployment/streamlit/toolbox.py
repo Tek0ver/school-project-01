@@ -63,22 +63,30 @@ class DatabaseInterface:
                     self.data['contents'], 
                     left_on='id', 
                     right_on='article_id', 
-                    how='inner'
+                    how='inner',
                 )
                 df = pd.merge(
                     df,
                     self.data['content_cities'],
-                    left_on='id_y', 
+                    left_on='id_x', 
                     right_on='id', 
-                    how='inner'
+                    how='inner',
                 )
+                # print(df)
                 df = pd.merge(
                     df,
-                    self.data['geocity'],
-                    left_on='city', 
-                    right_on='city', 
-                    how='inner'
+                    self.data['geocity'].drop(columns="id"),
+                    left_on='city',
+                    right_on='city',
+                    how='inner',
                 )
 
-                df = df[['article_date', 'city', 'population_2023', 'latitude', 'longitude']]
+                df = df[[
+                    'article_date',
+                    'city',
+                    'population_2023',
+                    'latitude',
+                    'longitude',
+                    ]]
+                
                 return df
