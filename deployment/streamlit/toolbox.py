@@ -1,7 +1,7 @@
 import psycopg2
 import pandas as pd
 import config
-from os import path
+from os import path, getcwd
 
 queries = {
     "query_articles":
@@ -33,11 +33,12 @@ class DatabaseInterface:
         except:
             self.mode = 'local'
             print('[FAIL] Database failure, local mode activated.')
+            wd = getcwd
             self.data = {
-                'articles': pd.read_csv(path.join('data-offline', 'articles.csv'), date_parser=pd.Timestamp),
-                'content_cities': pd.read_csv(path.join('data-offline', 'content_cities.csv')),
-                'contents': pd.read_csv(path.join('data-offline', 'contents.csv')),
-                'geocity': pd.read_csv(path.join('data-offline', 'geocity.csv'))
+                'articles': pd.read_csv(path.join(getcwd(), 'data-offline', 'articles.csv'), date_parser=pd.Timestamp),
+                'content_cities': pd.read_csv(path.join(getcwd(), 'data-offline', 'content_cities.csv')),
+                'contents': pd.read_csv(path.join(getcwd(), 'data-offline', 'contents.csv')),
+                'geocity': pd.read_csv(path.join(getcwd(), 'data-offline', 'geocity.csv'))
                 }
 
             # convert datetime
